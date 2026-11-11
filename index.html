@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<script>
+/* LINE 內建瀏覽器 → 自動改用外部瀏覽器（Safari / Chrome）開啟 */
+(function(){try{var u=navigator.userAgent||'';if(/\bLine\//i.test(u)&&location.search.indexOf('openExternalBrowser=1')<0){location.replace(location.href.split('#')[0]+(location.search?'&':'?')+'openExternalBrowser=1'+(location.hash||''));}}catch(e){}})();
+</script>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="好友麻將">
+<meta name="theme-color" content="#14532d">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>好友麻將</title>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="stylesheet" href="css/style.css?v=1.0">
+</head>
+<body>
+<header class="top" id="topbar">
+  <button id="backBtn" class="iconbtn" aria-label="返回">‹</button>
+  <h1 id="title">好友麻將</h1>
+  <span id="meChip"></span>
+</header>
+
+<main>
+  <!-- 首頁 -->
+  <section id="v-home" class="view">
+    <div class="hello" id="hello"></div>
+    <button class="online-chip" id="onlineChip" data-go="online" style="display:none"></button>
+    <div class="grid">
+      <button class="card" data-go="setup"><b>🀄 跟電腦打</b><span>三種難度・可開教學</span></button>
+      <button class="card" data-go="lobby"><b>👫 找朋友打</b><span>開房間・傳 LINE 邀請</span></button>
+      <button class="card" data-go="lessons"><b>📘 麻將教室</b><span>從認識牌到算台</span></button>
+      <button class="card" data-go="rank"><b>🏆 英雄榜</b><span>胡牌次數・累積分數</span></button>
+      <button class="card" data-go="settings"><b>⚙️ 設定</b><span>名字・字體・語音</span></button>
+      <button class="card" id="resumeCard" style="display:none"><b>▶️ 繼續上一場</b><span id="resumeInfo"></span></button>
+    </div>
+    <p class="foot" id="homeFoot"></p>
+  </section>
+
+  <!-- 跟電腦打：設定 -->
+  <section id="v-setup" class="view">
+    <div class="panel">
+      <h3>電腦程度</h3>
+      <div class="chips" id="lvChips">
+        <button class="chip" data-lv="0">🙂 輕鬆</button>
+        <button class="chip on" data-lv="1">😊 普通</button>
+        <button class="chip" data-lv="2">😎 高手</button>
+      </div>
+      <h3>打幾圈</h3>
+      <div class="chips" id="rdChips">
+        <button class="chip on" data-rd="1">一圈（約 4 局）</button>
+        <button class="chip" data-rd="2">二圈</button>
+        <button class="chip" data-rd="4">一將（四圈）</button>
+      </div>
+      <h3>模式</h3>
+      <div class="chips" id="tchChips">
+        <button class="chip on" data-tch="1">🎓 教學模式<small>提示打哪張、聽什麼、能不能碰</small></button>
+        <button class="chip" data-tch="0">🀄 一般模式<small>自己判斷，需要時按「提示」</small></button>
+      </div>
+      <label class="check"><input type="checkbox" id="openHands"> 攤開電腦的牌（學習用，看電腦怎麼組牌）</label>
+      <button class="big primary" id="startAI">開始打牌</button>
+    </div>
+  </section>
+
+  <!-- 牌桌（所有模式共用） -->
+  <section id="v-game" class="view">
+    <div id="tableInfo"></div>
+    <div id="seats"></div>
+    <div id="center"></div>
+    <div id="hint"></div>
+    <div id="actions"></div>
+    <div id="hand"></div>
+    <p class="ver" id="gameVer"></p>
+  </section>
+
+  <section id="v-lobby" class="view"><div id="lobbyBox"></div></section>
+  <section id="v-room" class="view"><div id="roomBox"></div></section>
+  <section id="v-lessons" class="view"><div id="lessonsBox"></div></section>
+  <section id="v-lesson" class="view"><div id="lessonBox"></div></section>
+  <section id="v-rank" class="view"><div id="rankBox"></div></section>
+  <section id="v-online" class="view"><div id="onlineBox"></div></section>
+  <section id="v-settings" class="view"><div id="settingsBox"></div></section>
+</main>
+
+<div id="sheet" class="sheet"><div class="sheet-box" id="sheetBox"></div></div>
+<div id="toast"></div>
+
+<script src="js/firebase-config.js?v=1.0"></script>
+<script src="js/core.js?v=1.0"></script>
+<script src="js/ai.js?v=1.0"></script>
+<script src="js/tiles.js?v=1.0"></script>
+<script src="js/app.js?v=1.0"></script>
+<script src="js/table.js?v=1.0"></script>
+<script src="js/lessons.js?v=1.0"></script>
+<script src="js/online.js?v=1.0"></script>
+</body>
+</html>
