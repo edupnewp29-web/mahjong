@@ -28,7 +28,7 @@ var Online = { ready: false, uid: null, reason: '', failed: false };
     if (!SET.name || !Online.ready) return;
     clearTimeout(syncT);
     syncT = setTimeout(function () {
-      fs.setDoc(uref(), { name: SET.name, games: STATS.games, hu: STATS.hu, zimo: STATS.zimo, score: STATS.score, best: STATS.best, first: STATS.first, updated: fs.serverTimestamp() }, { merge: true })
+      fs.setDoc(uref(), { name: SET.name, av: SET.av, games: STATS.games, hu: STATS.hu, zimo: STATS.zimo, score: STATS.score, best: STATS.best, first: STATS.first, updated: fs.serverTimestamp() }, { merge: true })
         .catch(function (e) { console.warn('sync', e.message); });
     }, 400);
   };
@@ -71,7 +71,7 @@ var Online = { ready: false, uid: null, reason: '', failed: false };
   function rid() { var c = 'abcdefghjkmnpqrstuvwxyz23456789', s = ''; for (var i = 0; i < 6; i++) s += c[Math.floor(Math.random() * c.length)]; return s; }
   Online.createRoom = function (o) {
     var id = rid();
-    return fs.setDoc(fs.doc(db, 'rooms', id), { host: Online.uid, status: 'waiting', seats: [{ uid: Online.uid, name: SET.name }, null, null, null], members: [Online.uid],
+    return fs.setDoc(fs.doc(db, 'rooms', id), { host: Online.uid, status: 'waiting', seats: [{ uid: Online.uid, name: SET.name, av: SET.av }, null, null, null], members: [Online.uid],
       rounds: o.rounds, lv: o.lv, seed: 'R' + id + Date.now(), created: fs.serverTimestamp() }).then(function () { return id; });
   };
   Online.joinRoom = function (id) {
@@ -83,7 +83,7 @@ var Online = { ready: false, uid: null, reason: '', failed: false };
         if (seats.some(function (x) { return x && x.uid === Online.uid; })) return r.status;
         if (r.status !== 'waiting') throw new Error('這一桌已經開打了');
         var i = seats.indexOf(null); if (i < 0) throw new Error('這一桌已經坐滿了');
-        seats[i] = { uid: Online.uid, name: SET.name };
+        seats[i] = { uid: Online.uid, name: SET.name, av: SET.av };
         tx.update(ref, { seats: seats, members: fs.arrayUnion(Online.uid) });
         return 'joined';
       });
@@ -144,21 +144,21 @@ var Room = (function () {
         var unw = R.unwatch; R.unwatch = null; if (unw) unw();
         Table.startOnline({ mode: 'online', roomId: id, isHost: r.host === Online.uid, me: me, lv: r.lv, teach: !!SET.tch, open: false,
           cfg: { seed: r.seed, names: r.seats.map(function (x) { return x.name; }), rounds: r.rounds },
-          seats: r.seats.map(function (x) { return { name: x.name, ai: !!x.ai, uid: x.uid || null }; }) });
+          seats: r.seats.map(function (x) { return { name: x.name, ai: !!x.ai, uid: x.uid || null, av: x.av | 0 }; }) });
         return;
       }
       var host = r.host === Online.uid, humans = r.seats.filter(Boolean).length;
       $('roomBox').innerHTML = '<div class="panel"><b>牌桌 ' + esc(id.toUpperCase()) + '</b>・' + ({ 1: '一圈', 2: '二圈', 4: '一將' }[r.rounds] || r.rounds + '圈') +
         '<div class="seatlist">' + r.seats.map(function (x, i) {
-          return '<div class="s"><span class="w">' + MJ.WINDS[i] + '</span>' + (x ? esc(x.name) + (x.uid === r.host ? '（房主）' : '') + (x.uid === Online.uid ? '（你）' : '') : '<span style="color:#999">空位（開始後由電腦補）</span>') + '</div>';
+          return '<div class="s"><span class="w">' + MJ.WINDS[i] + '</span>' + (x ? '<span class="av sm">' + avatarSVG(x.av) + '</span>' : '') + (x ? esc(x.name) + (x.uid === r.host ? '（房主）' : '') + (x.uid === Online.uid ? '（你）' : '') : '<span style="color:#999">空位（開始後由電腦補）</span>') + '</div>';
         }).join('') + '</div>' +
         '<button class="big" id="rmShare">💬 用 LINE 邀朋友</button>' +
         (host ? '<button class="big primary" id="rmStart">開始打牌（' + humans + ' 人＋' + (4 - humans) + ' 電腦）</button>' : '<div class="note sub">等房主按「開始」…</div>') +
         '<button class="big" id="rmLeave">離開這一桌</button></div>';
       $('rmShare').onclick = function () { copyLink(shareURL('room=' + id), '🀄 ' + SET.name + ' 邀你一起打麻將！點連結就能加入：\n'); };
       var st = $('rmStart'); if (st) st.onclick = function () {
-        var k = 0, names = ['電腦阿福', '電腦阿珠', '電腦阿財'];
-        var seats = r.seats.map(function (x) { return x || { ai: true, name: names[k++] }; });
+        var k = 0, names = ['阿福伯', '阿珠姨', '阿財叔'], avs = [0, 3, 2];
+        var seats = r.seats.map(function (x) { if (x) return x; k++; return { ai: true, name: names[k - 1], av: avs[k - 1] }; });
         st.disabled = true; Online.startRoom(id, seats).catch(function (e) { toast('開始失敗：' + e.message); st.disabled = false; });
       };
       $('rmLeave').onclick = function () { Online.leaveRoom(id).then(function () { go('lobby'); }); };

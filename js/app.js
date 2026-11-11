@@ -1,5 +1,5 @@
 /* ===== 外殼：畫面切換、名字、設定、英雄榜、線上名單 ===== */
-var APP_VERSION = 'v1.1', APP_DATE = '2026-11-11';
+var APP_VERSION = 'v1.2', APP_DATE = '2026-11-11';
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 var KP = /[?&]guest=1/.test(location.search) ? 'g_' : ''; /* 測試用：同一台電腦模擬另一支手機 */
@@ -13,7 +13,7 @@ $('sheet').addEventListener('click', function (e) { if (e.target.id === 'sheet' 
 function verText() { return '好友麻將 ' + APP_VERSION + '（' + APP_DATE + ' 更新）'; }
 
 /* ----- 設定與名字（存在這支手機） ----- */
-var SET = Object.assign({ name: '', fs: 20, speech: true, num: true, speed: 1, lv: 1, rd: 1, tch: 1, open: false }, load('mj_set', {}));
+var SET = Object.assign({ name: '', av: Math.floor(Math.random() * 8), fs: 20, speech: true, num: true, speed: 1, lv: 1, rd: 1, tch: 1, open: false }, load('mj_set', {}));
 function saveSet() { save('mj_set', SET); applyFont(); if (window.Online && Online.ready) Online.syncProfile(); }
 function applyFont() { document.documentElement.style.setProperty('--fs', SET.fs + 'px'); }
 applyFont();
@@ -43,7 +43,7 @@ function go(v, noPush) {
   if (v === 'home') viewStack = [];
   if (curView === 'game' && v !== 'game' && window.Table) Table.leave();
   if (curView === 'room' && v !== 'room' && window.Room) Room.leave();
-  curView = v;
+  curView = v; document.body.classList.toggle('ingame', v === 'game');
   document.querySelectorAll('.view').forEach(function (x) { x.classList.toggle('on', x.id === 'v-' + v); });
   $('title').textContent = TITLES[v] || '好友麻將';
   $('backBtn').style.visibility = v === 'home' ? 'hidden' : 'visible';
@@ -61,7 +61,7 @@ $('backBtn').onclick = function () {
 document.querySelectorAll('[data-go]').forEach(function (b) { b.onclick = function () { go(b.getAttribute('data-go')); }; });
 
 function renderHome() {
-  $('hello').textContent = SET.name ? SET.name + '，你好！今天打幾圈？' : '歡迎來打麻將！';
+  $('hello').innerHTML = (SET.name ? '<span class="av">' + avatarSVG(SET.av, 'happy') + '</span>' : '') + esc(SET.name ? SET.name + '，你好！今天打幾圈？' : '歡迎來打麻將！');
   var sv = load('mj_save', null), rc = $('resumeCard');
   if (sv && sv.acts) { rc.style.display = 'flex'; $('resumeInfo').textContent = '跟電腦・已打 ' + (sv.handNo || 0) + ' 局'; rc.onclick = function () { Table.resumeLocal(); }; }
   else rc.style.display = 'none';
@@ -78,13 +78,15 @@ function askName(then, change) {
   $('sheet').dataset.lock = change ? '' : '1';
   sheet('<h2>' + (change ? '修改名字' : '請輸入你的名字') + '</h2><p style="margin:4px 0 0;color:#666">朋友會看到這個名字。之後用同一支手機打開會自動記住。</p>' +
     '<input class="txt" id="nmIn" maxlength="12" placeholder="例如：阿明、王媽媽" value="' + esc(SET.name) + '"><div id="nmErr" style="color:#c62828;min-height:1.4em"></div>' +
+    '<b>選一個頭像</b><div class="avpick" id="avPick">' + AVATARS.map(function (a, i) { return '<button class="avopt' + (i === SET.av ? ' on' : '') + '" data-av="' + i + '"><span class="av">' + avatarSVG(i) + '</span><small>' + a.n + '</small></button>'; }).join('') + '</div>' +
     '<div class="row">' + (change ? '<button class="btn" onclick="closeSheet()">取消</button>' : '') + '<button class="btn primary" id="nmOk" style="flex:1">' + (change ? '儲存' : '開始') + '</button></div>');
-  var inp = $('nmIn');
+  var inp = $('nmIn'), pickAv = SET.av;
+  $('avPick').querySelectorAll('.avopt').forEach(function (b) { b.onclick = function () { pickAv = +b.dataset.av; $('avPick').querySelectorAll('.avopt').forEach(function (x) { x.classList.toggle('on', x === b); }); }; });
   setTimeout(function () { try { inp.focus(); } catch (e) { } }, 300);
   function ok() {
     var n = inp.value.replace(/\s+/g, ' ').trim().slice(0, 12);
     if (!n) { $('nmErr').textContent = '請輸入名字'; return; }
-    SET.name = n; saveSet(); $('sheet').dataset.lock = ''; closeSheet();
+    SET.name = n; SET.av = pickAv; saveSet(); $('sheet').dataset.lock = ''; closeSheet();
     $('meChip').textContent = '👤 ' + n; if (curView === 'home') renderHome();
     if (window.Online && Online.ready) Online.ping();
     if (then) then();
@@ -111,7 +113,7 @@ function renderSettings() {
   var on = window.Online && Online.ready;
   function sw(k, label, sub) { return '<button class="item" data-sw="' + k + '"><span class="t"><b>' + label + '</b><small>' + sub + '</small></span><span class="badge' + (SET[k] ? '' : ' gray') + '">' + (SET[k] ? '開' : '關') + '</span></button>'; }
   $('settingsBox').innerHTML = '<div class="list">' +
-    '<button class="item" id="sName"><span class="t"><b>我的名字</b><small>' + (esc(SET.name) || '未設定') + '</small></span><span class="badge">修改</span></button>' +
+    '<button class="item" id="sName"><span class="av sm">' + avatarSVG(SET.av) + '</span><span class="t"><b>我的名字和頭像</b><small>' + (esc(SET.name) || '未設定') + '</small></span><span class="badge">修改</span></button>' +
     '<div class="panel"><h3>字體大小</h3><div class="chips" id="fsChips">' + [[18, '大'], [20, '較大'], [23, '特大']].map(function (x) { return '<button class="chip' + (SET.fs === x[0] ? ' on' : '') + '" data-fs="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
     '<h3>電腦出牌速度</h3><div class="chips" id="spChips">' + [[2, '慢'], [1, '中'], [0, '快']].map(function (x) { return '<button class="chip' + (SET.speed === x[0] ? ' on' : '') + '" data-sp="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div></div>' +
     sw('speech', '🔊 語音報牌', '打牌時唸出「五萬」「碰」「胡」') +
@@ -160,7 +162,7 @@ function renderRank() {
   Online.leaderboard(rankTab).then(function (list) {
     var unit = { hu: '次', score: '分', best: '台' }[rankTab];
     $('rkList').innerHTML = list.length ? list.map(function (u, i) {
-      return '<div class="rank-row' + (u.id === Online.uid ? ' me' : '') + '"><span class="n">' + (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1) + '</span><span><b>' + esc(u.name) + '</b><br><small style="color:#777">' + (u.games || 0) + ' 場・胡 ' + (u.hu || 0) + '</small></span><span><b>' + (u[rankTab] || 0) + '</b> ' + unit + '</span></div>';
+      return '<div class="rank-row' + (u.id === Online.uid ? ' me' : '') + '"><span class="n">' + (i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1) + '</span><span><b>' + esc(u.name) + '</b><br><small style="color:#777">' + (u.games || 0) + ' 場・胡 ' + (u.hu || 0) + '</small></span></span><span><b>' + (u[rankTab] || 0) + '</b> ' + unit + '</span></div>';
     }).join('') : '<div class="note sub">還沒有人上榜，打完一場就上榜！</div>';
   }).catch(function (e) { $('rkList').innerHTML = '<div class="note">讀取失敗：' + esc(e.message) + '</div>'; });
 }
@@ -173,7 +175,7 @@ function renderOnline() {
   Online.onlineUsers().then(function (list) {
     box.innerHTML = '<div class="list">' + list.map(function (u) {
       var me = u.id === Online.uid;
-      return '<div class="item"><span class="dot"></span><span class="t"><b>' + esc(u.name || '訪客') + (me ? '（你）' : '') + '</b><small>' + (u.status === 'playing' ? '正在打牌' : '在大廳') + '</small></span>' +
+      return '<div class="item"><span class="av sm">' + avatarSVG(u.av | 0) + '</span><span class="t"><b>' + esc(u.name || '訪客') + (me ? '（你）' : '') + '</b><small>' + (u.status === 'playing' ? '正在打牌' : '在大廳') + '</small></span>' +
         (me ? '' : '<button class="badge" data-inv="' + u.id + '" data-n="' + esc(u.name) + '" style="border:0">邀請</button>') + '</div>';
     }).join('') + '</div><button class="big" id="olRefresh">重新整理</button>';
     $('olRefresh').onclick = renderOnline;

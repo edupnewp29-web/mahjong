@@ -61,8 +61,8 @@
     var key = t + (showNum ? 'n' : '');
     if (cache[key]) return cache[key];
     var body;
-    if (t === -1) body = '<rect x="1" y="1" width="58" height="78" rx="7" fill="#2e7d4f"/><rect x="5" y="5" width="50" height="70" rx="5" fill="none" stroke="#9fd3b0" stroke-width="2"/>';
-    else body = '<rect x="1" y="1" width="58" height="78" rx="7" fill="#fffdf4" stroke="#c9b98f" stroke-width="2"/>' + face(t, showNum);
+    if (t === -1) body = '<rect x="1" y="1" width="58" height="78" rx="7" fill="#f3ead2"/><rect x="1" y="1" width="58" height="71" rx="7" fill="#2f8f5b"/><rect x="6" y="6" width="48" height="60" rx="5" fill="none" stroke="#7fcf9f" stroke-width="2"/>';
+    else body = '<rect x="1" y="4" width="58" height="75" rx="7" fill="#2f8f5b"/><rect x="1" y="1" width="58" height="72" rx="7" fill="#fffdf4" stroke="#d8cba6" stroke-width="1.5"/><g transform="translate(0,0.5) scale(1,0.9)">' + face(t, showNum) + '</g>';
     return (cache[key] = '<svg viewBox="0 0 60 80" xmlns="http://www.w3.org/2000/svg" aria-label="' + (t < 0 ? '牌背' : MJ.name(t)) + '">' + body + '</svg>');
   };
   /* 一張牌的 HTML */

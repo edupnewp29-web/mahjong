@@ -1,7 +1,7 @@
 /* ===== 牌桌：畫面＋流程控制（跟電腦打、多人連線共用） ===== */
 var Table = (function () {
   var T = { on: false };
-  var AI_NAMES = ['電腦阿福', '電腦阿珠', '電腦阿財'];
+  var AI_NAMES = ['阿福伯', '阿珠姨', '阿財叔'], AI_AV = [0, 3, 2];
   var timers = [];
   function later(fn, ms) { var id = setTimeout(function () { timers = timers.filter(function (x) { return x !== id; }); fn(); }, ms); timers.push(id); }
   function clearTimers() { timers.forEach(clearTimeout); timers = []; }
@@ -15,12 +15,12 @@ var Table = (function () {
     if (!SET.name) { askName(T.startLocal); return; }
     var cfg = { seed: 'L' + Date.now() + Math.random().toString(36).slice(2, 6), names: [SET.name, AI_NAMES[0], AI_NAMES[1], AI_NAMES[2]], rounds: SET.rd };
     begin({ mode: 'local', cfg: cfg, acts: [], me: 0, lv: SET.lv, teach: !!SET.tch, open: !!SET.open,
-      seats: cfg.names.map(function (n, i) { return { name: n, ai: i > 0 }; }) });
+      seats: cfg.names.map(function (n, i) { return { name: n, ai: i > 0, av: i > 0 ? AI_AV[i - 1] : SET.av }; }) });
   };
   T.resumeLocal = function () {
     var sv = load('mj_save', null); if (!sv) return;
     begin({ mode: 'local', cfg: sv.cfg, acts: sv.acts, me: 0, lv: sv.lv, teach: sv.teach, open: sv.open,
-      seats: sv.cfg.names.map(function (n, i) { return { name: n, ai: i > 0 }; }) });
+      seats: sv.cfg.names.map(function (n, i) { return { name: n, ai: i > 0, av: i > 0 ? AI_AV[i - 1] : SET.av }; }) });
   };
   T.startOnline = function (o) { begin(o); };
   function begin(o) {
@@ -76,7 +76,8 @@ var Table = (function () {
       var e = ev[T.evIdx]; if (T.quiet) continue;
       var w = { dis: MJ.name(e.t), pong: '碰', chow: '吃', mk: '槓', ak: '槓', jk: '槓', hu: '胡', zimo: '自摸', flower: '補花' }[e.e];
       if (w && (e.e !== 'flower' || e.s === T.me)) speak(w);
-      if (e.e === 'pong' || e.e === 'chow' || e.e === 'mk' || e.e === 'ak' || e.e === 'jk') T.say = { s: e.s, w: w, at: Date.now() };
+      if (e.e === 'pong' || e.e === 'chow' || e.e === 'mk' || e.e === 'ak' || e.e === 'jk' || e.e === 'hu' || e.e === 'zimo') T.say = { s: e.s, w: w, at: Date.now() };
+      if (e.e === 'dis' && e.s !== T.me) T.pop = { t: e.t, at: Date.now() };
     }
   }
   function push(a) {
@@ -185,37 +186,78 @@ var Table = (function () {
     else tl = [m.t, m.t, m.t, m.t];
     return '<span class="meld">' + tl.map(function (t) { return tileHTML(t, cls); }).join('') + '</span>';
   }
-  function seatHTML(s, mine) {
-    var H = T.H, w = MJ.seatWind(H, s), dealer = s === H.dealer;
-    var h = '<div class="seat' + (H.turn === s && H.phase !== 'end' ? ' turn' : '') + '">';
-    h += '<div class="hd"><span class="w' + (dealer ? ' dealer' : '') + '">' + MJ.WINDS[w] + (dealer ? ' 莊' + (H.lian ? '連' + H.lian : '') : '') + '</span>' +
-      '<span class="nm">' + esc(nm(s)) + (mine ? '（我）' : '') + '</span>' + (mine ? '' : '<span class="cnt">' + REL[rel(s)] + '・' + H.hands[s].length + '張</span>') +
-      (H.flowers[s].length ? '<span class="flw">' + H.flowers[s].map(function (t) { return tileHTML(t); }).join('') + '</span>' : '') +
-      '<span class="sc">' + (T.M.scores[s] >= 0 ? '+' : '') + T.M.scores[s] + '</span></div>';
-    if (H.melds[s].length) h += '<div class="ml">' + H.melds[s].map(function (m) { return meldHTML(m, 'md'); }).join('') + '</div>';
-    if (!mine && T.open && T.mode === 'local' && isAI(s)) h += '<div class="openhand">' + MJ.sortTiles(H.hands[s].slice()).map(function (t) { return tileHTML(t, 'sm'); }).join('') + '</div>';
-    var rv = H.rivers[s], last = H.last && H.last.s === s && (H.phase === 'claim' || (H.phase === 'discard' && H.turn === (s + 1) % 4));
-    h += '<div class="river">' + rv.map(function (t, i) { return tileHTML(t, 'sm' + (last && i === rv.length - 1 ? ' last' : '')); }).join('') + '</div>';
+  function playerHTML(s, pos) {
+    var H = T.H, w = MJ.seatWind(H, s), dealer = s === H.dealer, sc = T.M.scores[s];
+    var turn = H.phase === 'discard' && H.turn === s;
+    var win = H.phase === 'end' && H.result && H.result.type === 'hu' && H.result.s === s;
+    var bub = T.say && T.say.s === s && Date.now() - T.say.at < 2500 ? '<span class="bubble">' + T.say.w + '！</span>' : '';
+    return '<div class="pl pl-' + pos + (turn ? ' turn' : '') + '"><div class="av">' + avatarSVG(T.seats[s].av, win ? 'happy' : '') + bub + '</div>' +
+      '<div class="pinfo"><b class="pn">' + esc(nm(s)) + '</b><span><span class="pw' + (dealer ? ' dl' : '') + '">' + MJ.WINDS[w] + (dealer ? '莊' + (H.lian ? H.lian : '') : '') + '</span>' +
+      (isAI(s) ? '<span class="ai-tag">電腦</span>' : '') + '</span><span class="ps ' + (sc >= 0 ? 'up' : 'dn') + '">' + (sc > 0 ? '+' : '') + sc + '</span>' +
+      (pos !== 'me' ? '<span class="pc">' + H.hands[s].length + ' 張</span>' : '') + '</div></div>';
+  }
+  function extras(s, cls) {
+    var H = T.H, h = H.melds[s].map(function (m) { return meldHTML(m, cls); }).join('');
+    if (H.flowers[s].length) h += '<span class="flw">' + H.flowers[s].map(function (t) { return tileHTML(t, cls); }).join('') + '</span>';
+    return h;
+  }
+  function openHand(s) { return T.open && T.mode === 'local' && isAI(s); }
+  function riverHTML(s, cls) {
+    var H = T.H, rv = H.rivers[s], last = H.last && H.last.s === s && (H.phase === 'claim' || (H.phase === 'discard' && H.turn === (s + 1) % 4));
+    return '<div class="rv ' + cls + '">' + rv.map(function (t, i) { return tileHTML(t, last && i === rv.length - 1 ? 'last' : ''); }).join('') + '</div>';
+  }
+  function backsHTML(s) {
+    var H = T.H;
+    if (openHand(s)) return MJ.sortTiles(H.hands[s].slice()).map(function (t) { return tileHTML(t, 'mini'); }).join('');
+    var n = H.hands[s].length, h = ''; for (var i = 0; i < n; i++) h += '<i class="bk"></i>'; return h;
+  }
+  function compassHTML() {
+    var H = T.H, h = '<div class="cp">';
+    ['b', 'r', 't', 'l'].forEach(function (p, i) {
+      var s = (T.me + i) % 4, on = H.phase !== 'end' && ((H.phase === 'discard' && H.turn === s) || (H.phase === 'claim' && H.claim.from === s));
+      h += '<span class="cw ' + p + (on ? ' on' : '') + '">' + MJ.WINDS[MJ.seatWind(H, s)] + '</span>';
+    });
+    h += '<div class="cc"><small>' + MJ.WINDS[H.wind] + '風 剩</small><big>' + MJ.remaining(H) + '</big></div>';
+    if (T.pop && Date.now() - T.pop.at < 1400 && H.phase !== 'end') h += '<div class="pop">' + tileHTML(T.pop.t) + '</div>';
     return h + '</div>';
+  }
+  function fitRivers(top, left, right) {
+    var H = T.H, mid = $('mid'); if (!mid) return;
+    var W = mid.clientWidth, Hh = mid.clientHeight; if (!W || !Hh) return;
+    var C = Math.max(64, Math.min(124, Math.round(Math.min(W, Hh) * 0.27)));
+    var n = [H.rivers[top].length, H.rivers[left].length, H.rivers[right].length, H.rivers[T.me].length], w;
+    for (w = 46; w > 16; w--) {
+      var th = Math.round(w * 4 / 3) + 2, tw = w + 2;
+      var colsTB = Math.max(1, Math.floor((W - 4) / tw)), rT = Math.ceil(n[0] / colsTB), rB = Math.ceil(n[3] / colsTB);
+      var S = (W - C - 12) / 2, colsS = Math.floor(S / tw); if (colsS < 1) continue;
+      var rL = Math.ceil(n[1] / colsS), rR = Math.ceil(n[2] / colsS);
+      if (rT * th + Math.max(C, rL * th, rR * th) + rB * th + 12 <= Hh) break;
+    }
+    mid.style.setProperty('--river', w + 'px'); mid.style.setProperty('--cp', C + 'px');
   }
   function render() {
     if (!T.on || curView !== 'game') return;
     var H = T.H, M = T.M, myTurn = H.phase === 'discard' && H.turn === T.me;
     var C = H.claim, myOpts = H.phase === 'claim' && C.opts[T.me] && !(T.mode === 'online' && T.mySay === T.claimAt) && (T.mode === 'online' || !preemptedLocal()) ? C.opts[T.me] : null;
     /* 上方資訊 */
-    $('tableInfo').innerHTML = '<span>' + MJ.WINDS[H.wind] + '風圈・第 ' + (H.no + 1) + ' 局</span><span class="wall">剩 ' + MJ.remaining(H) + ' 張</span>' +
-      '<span>' + (T.teach ? '' : '<button id="hintBtn">💡提示</button> ') + '<button id="menuBtn">≡</button></span>';
-    /* 其他三家：上家、對家、下家 */
-    $('seats').innerHTML = [3, 2, 1].map(function (r) { return seatHTML((T.me + r) % 4, false); }).join('') + seatHTML(T.me, true);
+    $('tableInfo').innerHTML = '<button id="exitBtn">‹ 離開</button><span>' + MJ.WINDS[H.wind] + '風圈 第 ' + (H.no + 1) + ' 局<span class="tv">' + esc(verText()) + '</span></span>' +
+      '<span>' + (T.teach ? '' : '<button id="hintBtn">💡提示</button> ') + '<button id="menuBtn">≡ 選單</button></span>';
+    /* 牌桌 */
+    var top = (T.me + 2) % 4, left = (T.me + 3) % 4, right = (T.me + 1) % 4;
+    $('board').innerHTML =
+      '<div class="oppTop">' + playerHTML(top, 'top') + '<div class="otx"><div class="backs">' + backsHTML(top) + '</div><div class="mrow">' + extras(top, 'mini') + '</div></div></div>' +
+      '<div class="oppSide L">' + playerHTML(left, 'left') + '<div class="mcol">' + (openHand(left) ? '<div class="backs wrap">' + backsHTML(left) + '</div>' : '') + extras(left, 'mini') + '</div></div>' +
+      '<div id="mid">' + riverHTML(top, 'rt') + riverHTML(left, 'rl') + compassHTML() + riverHTML(right, 'rr') + riverHTML(T.me, 'rb') + '</div>' +
+      '<div class="oppSide R">' + playerHTML(right, 'right') + '<div class="mcol">' + (openHand(right) ? '<div class="backs wrap">' + backsHTML(right) + '</div>' : '') + extras(right, 'mini') + '</div></div>';
+    $('mebar').innerHTML = playerHTML(T.me, 'me') + '<div class="mrow">' + extras(T.me, 'md') + '</div>';
     /* 中間訊息 */
     var c = '';
-    if (H.phase === 'claim') c = '<span>' + esc(nm(C.from)) + (C.rob ? ' 加槓' : ' 打出') + '</span>' + tileHTML(C.t, 'xl') + (myOpts ? '<span>你要嗎？</span>' : '<span>…</span>');
-    else if (T.say && Date.now() - T.say.at < 2500) c = '<span class="say">' + esc(nm(T.say.s)) + '：' + T.say.w + '！</span>';
-    else if (myTurn) c = '<span>輪到你了！<br><small style="font-weight:400">點一張牌，再點一次（或按「打出」）就打出去</small></span>';
-    else if (H.phase === 'discard') c = '<span>' + esc(nm(H.turn)) + ' 想牌中…</span>';
+    if (myOpts) c = '<span>' + esc(nm(C.from)) + (C.rob ? ' 加槓' : ' 打出') + '</span>' + tileHTML(C.t, 'xl') + '<span>你要嗎？</span>';
+    else if (myTurn) c = '<span>輪到你了！點一張牌，再點一次就打出</span>';
     else if (H.phase === 'end') c = '<span>' + (H.result.type === 'flow' ? '流局' : esc(nm(H.result.s)) + (H.result.from < 0 ? ' 自摸！' : ' 胡了！')) + '</span><button class="act go" id="resBtn">看結果</button>';
     $('center').innerHTML = c;
-    if (T.say && Date.now() - T.say.at < 2500) { clearTimeout(T.sayT); T.sayT = setTimeout(render, 2600); }
+    var pend = (T.say && Date.now() - T.say.at < 2500) || (T.pop && Date.now() - T.pop.at < 1400);
+    if (pend) { clearTimeout(T.sayT); T.sayT = setTimeout(render, 1450); }
     /* 教學提示 */
     var hint = '', showH = T.teach || T.hintOnce;
     if (showH && myTurn) {
@@ -232,7 +274,6 @@ var Table = (function () {
     }
     if (T.mode === 'online' && H.phase === 'claim' && C.opts[T.me] && T.mySay === T.claimAt) hint = '已送出，等其他人決定…';
     $('hint').innerHTML = hint; $('hint').classList.toggle('on', !!hint);
-    /* 我的牌組與牌河 */
     /* 按鈕 */
     var a = '', recK = null;
     if (myOpts && T.teach) { var r = MJAI.claim(H, T.me, 1); recK = r ? r.k + (r.use ? r.use.join(',') : '') : 'pass'; }
@@ -257,14 +298,16 @@ var Table = (function () {
     var list = handOrder(), box = $('hand');
     var W = box.clientWidth || Math.min(window.innerWidth, 900) - 16, n = list.length;
     var one = Math.floor((W - 16) / n) - 2, size = one;
-    if (one < 44) size = Math.floor((W - 16) / Math.ceil(n / 2)) - 2;
+    var land = window.innerWidth > window.innerHeight && window.innerHeight < 560;
+    if (one < 44 && !land) size = Math.floor((W - 16) / Math.ceil(n / 2)) - 2;
     size = Math.max(30, Math.min(64, size));
     box.style.setProperty('--hand', size + 'px');
-    var split = one < 44 ? Math.ceil(n / 2) : 0, drawnLast = myTurn && H.drawn != null;
+    var split = one < 44 && !land ? Math.ceil(n / 2) : 0, drawnLast = myTurn && H.drawn != null;
     box.innerHTML = list.map(function (t, i) {
       var cls = (T.sel === i ? 'sel ' : '') + (T.rec === t && (T.sel == null || list[T.sel] !== t) && list.indexOf(t) === i ? 'rec ' : '') + (drawnLast && i === n - 1 && !split ? 'new' : '');
       return (split && i === split ? '<span class="gap"></span>' : '') + tileHTML(t, cls, ' data-i="' + i + '"');
     }).join('');
+    fitRivers(top, left, right);
     $('gameVer').textContent = verText() + (T.mode === 'online' ? '・連線牌桌' : '');
     /* 事件 */
     box.querySelectorAll('.tile').forEach(function (el) { el.onclick = function () { T.tapTile(+el.dataset.i); }; });
@@ -275,6 +318,7 @@ var Table = (function () {
     var db = $('disBtn'); if (db) db.onclick = discard;
     var hb = $('hintBtn'); if (hb) hb.onclick = T.showHint;
     $('menuBtn').onclick = menu;
+    $('exitBtn').onclick = function () { $('backBtn').click(); };
     var rb = $('resBtn'); if (rb) rb.onclick = showResult;
     T.hintOnce = false;
   }
@@ -316,7 +360,7 @@ var Table = (function () {
     if (R.type === 'flow') h = '<h2>流局</h2><p>牌摸完了，沒有人胡。莊家連莊。</p>';
     else {
       var s = R.s, tiles = H.hands[s].slice(); if (R.from >= 0 && R.tile != null) tiles.push(R.tile);
-      h = '<h2>🎉 ' + esc(nm(s)) + (R.from < 0 ? ' 自摸！' : ' 胡了！') + '</h2>' + (R.from >= 0 ? '<p style="margin:0">' + esc(nm(R.from)) + ' 放槍</p>' : '') +
+      h = '<h2 style="display:flex;align-items:center;gap:10px"><span class="av">' + avatarSVG(T.seats[s].av, 'happy') + '</span>' + esc(nm(s)) + (R.from < 0 ? ' 自摸！' : ' 胡了！') + '</h2>' + (R.from >= 0 ? '<p style="margin:0">' + esc(nm(R.from)) + ' 放槍</p>' : '') +
         '<div class="res-hand">' + H.melds[s].map(function (m) { return meldHTML(m); }).join('') + ' ' + MJ.sortTiles(tiles).map(function (t) { return tileHTML(t, t === R.tile ? 'last' : ''); }).join('') + '</div>' +
         '<table class="tai">' + R.items.map(function (x) { return '<tr><td>' + esc(x[0]) + '</td><td>' + x[1] + ' 台</td></tr>'; }).join('') +
         (R.items.length ? '' : '<tr><td>屁胡（沒有台）</td><td>0 台</td></tr>') + '<tr><td><b>合計</b></td><td>' + R.tai + ' 台</td></tr></table>' +
@@ -342,7 +386,7 @@ var Table = (function () {
     if (T.mode === 'local') localStorage.removeItem(KP + 'mj_save');
     else if (T.isHost) Online.finishRoom(T.roomId);
     sheet('<h2>🏁 總成績</h2>' + order.map(function (s, i) {
-      return '<div class="rank-row' + (s === T.me ? ' me' : '') + '"><span class="n">' + ['🥇', '🥈', '🥉', '4'][i] + '</span><span><b>' + esc(nm(s)) + '</b><br><small style="color:#777">胡 ' + M.stats[s].hu + ' 次（自摸 ' + M.stats[s].zimo + '）・放槍 ' + M.stats[s].pao + '</small></span><span class="' + (M.scores[s] >= 0 ? 'p' : 'n') + '"><b>' + (M.scores[s] >= 0 ? '+' : '') + M.scores[s] + '</b></span></div>';
+      return '<div class="rank-row' + (s === T.me ? ' me' : '') + '"><span class="n">' + ['🥇', '🥈', '🥉', '4'][i] + '</span><span style="display:flex;gap:8px;align-items:center"><span class="av sm">' + avatarSVG(T.seats[s].av, i === 0 ? 'happy' : '') + '</span><span><b>' + esc(nm(s)) + '</b><br><small style="color:#777">胡 ' + M.stats[s].hu + ' 次（自摸 ' + M.stats[s].zimo + '）・放槍 ' + M.stats[s].pao + '</small></span><span class="' + (M.scores[s] >= 0 ? 'p' : 'n') + '"><b>' + (M.scores[s] >= 0 ? '+' : '') + M.scores[s] + '</b></span></div>';
     }).join('') + '<div class="row" style="margin-top:14px"><button class="btn" id="ovHome">回首頁</button>' + (T.mode === 'local' ? '<button class="btn primary" id="ovAgain" style="flex:1">再來一場</button>' : '') + '</div>');
     $('ovHome').onclick = function () { closeSheet(); go('home'); };
     var ag = $('ovAgain'); if (ag) ag.onclick = function () { closeSheet(); T.startLocal(); };

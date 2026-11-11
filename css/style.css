@@ -46,7 +46,7 @@ main{max-width:900px;margin:0 auto}
 input.txt{width:100%;padding:14px;font-size:1.1em;border-radius:12px;border:2px solid #bbb;margin:8px 0}
 
 /* ---------- tiles ---------- */
-.tile{display:inline-block;width:var(--w,var(--hand));aspect-ratio:3/4;vertical-align:bottom;position:relative;flex:none;filter:drop-shadow(0 2px 0 #9b8a5c)}
+.tile{display:inline-block;width:var(--w,var(--hand));aspect-ratio:3/4;vertical-align:bottom;position:relative;flex:none;filter:drop-shadow(0 2px 1px rgba(0,0,0,.35))}
 .tile svg{display:block;width:100%;height:100%}
 .tile.sm{--w:var(--river);filter:drop-shadow(0 1px 0 #9b8a5c)}
 .tile.md{--w:var(--meld)}
@@ -99,7 +99,7 @@ input.txt{width:100%;padding:14px;font-size:1.1em;border-radius:12px;border:2px 
 #hand{display:flex;flex-wrap:wrap;justify-content:center;gap:3px 2px;padding:8px 2px 4px;background:rgba(0,0,0,.15);border-radius:12px}
 #hand .tile{transition:transform .12s}
 #hand .tile.sel{transform:translateY(-12px)}
-#hand .tile.sel svg rect:first-child{stroke:#ff9800;stroke-width:4}
+#hand .tile.sel svg rect:nth-of-type(2){stroke:#ff9800;stroke-width:4}
 #hand .tile.rec::after{content:'★';position:absolute;top:-14px;left:50%;transform:translateX(-50%);color:#ffeb3b;font-size:20px;text-shadow:0 1px 2px #000}
 #hand .tile.new{margin-left:10px}
 #hand .gap{width:100%;height:0}
@@ -141,3 +141,104 @@ input.txt{width:100%;padding:14px;font-size:1.1em;border-radius:12px;border:2px 
 .qhand .tile{--w:40px}
 .qhand .tile.sel{transform:translateY(-8px)}
 @media (min-width:700px){:root{--river:30px;--meld:32px}}
+
+/* ===== v1.2 牌桌（像真的麻將桌） ===== */
+body.ingame .top{display:none}
+body.ingame{background:#3b2412}
+#v-game{background:radial-gradient(ellipse at 50% 40%,#5a3a1d,#2e1b0b);padding:calc(env(safe-area-inset-top) + 4px) 6px 4px}
+#tableInfo{font-size:16px}
+#tableInfo button{font-size:16px}
+#center:empty,#mebar:empty{display:none}
+#center{min-height:0;font-size:1em}
+#center .tile.xl{--w:62px}
+#board{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:72px minmax(0,1fr) 72px;grid-template-rows:auto minmax(0,1fr);gap:4px;padding:6px;border-radius:20px;
+  background:radial-gradient(ellipse at 50% 50%,#2f9a63 0%,#1f7a4c 55%,#155c38 100%);border:8px solid #9a6431;
+  box-shadow:inset 0 0 24px rgba(0,0,0,.45),0 0 0 2px #5e3b18,0 4px 10px rgba(0,0,0,.5)}
+.oppTop{grid-column:1/4;display:flex;align-items:center;gap:8px;min-width:0}
+.otx{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.mrow{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-end}
+.oppSide{display:flex;flex-direction:column;align-items:center;gap:6px;overflow:hidden;min-height:0;padding-top:4px}
+.mcol{display:flex;flex-direction:column;gap:4px;align-items:center}
+.mcol .meld,.mcol .flw{flex-wrap:wrap;justify-content:center;max-width:70px}
+.backs{display:flex;gap:1px;flex-wrap:nowrap;overflow:hidden}
+.backs.wrap{flex-wrap:wrap;justify-content:center;max-width:70px}
+.bk{display:inline-block;width:15px;height:21px;border-radius:3px;flex:none;background:linear-gradient(#45ad74,#2a7d4f);border-bottom:5px solid #f3ead2;box-shadow:0 1px 1px rgba(0,0,0,.4)}
+.tile.mini{--w:19px}
+#mid{position:relative;min-height:0;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-areas:"rt rt rt" "rl cp rr" "rb rb rb";align-content:center;align-items:center;gap:4px;overflow:hidden;--river:30px;--cp:90px}
+.rv{display:flex;flex-wrap:wrap;gap:2px;min-width:0}
+.rv .tile{--w:var(--river)}
+.rv .tile.last{outline:none;transform:scale(1.18);z-index:2;filter:drop-shadow(0 0 4px #ff1744) drop-shadow(0 0 2px #ff1744)}
+.rt{grid-area:rt;justify-content:center;align-content:flex-end}
+.rb{grid-area:rb;justify-content:center;align-content:flex-start}
+.rl{grid-area:rl;justify-content:flex-end;align-content:center}
+.rr{grid-area:rr;justify-content:flex-start;align-content:center}
+.cp{grid-area:cp;width:var(--cp);height:var(--cp);position:relative;border-radius:16px;background:linear-gradient(145deg,#454b52,#15181b);box-shadow:0 5px 12px rgba(0,0,0,.5),inset 0 0 0 3px #6b7178}
+.cp .cw{position:absolute;font-weight:900;color:#c9cdd1;font-size:calc(var(--cp) * .2);line-height:1}
+.cp .cw.b{bottom:5%;left:50%;transform:translateX(-50%)}
+.cp .cw.t{top:5%;left:50%;transform:translateX(-50%)}
+.cp .cw.l{left:6%;top:50%;transform:translateY(-50%)}
+.cp .cw.r{right:6%;top:50%;transform:translateY(-50%)}
+.cp .cw.on{color:#ffd54f;text-shadow:0 0 8px #ffb300,0 0 2px #ffb300}
+.cp .cc{position:absolute;inset:27%;border-radius:50%;background:radial-gradient(#22272b,#0b0d0f);color:#cfd8dc;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
+.cp .cc small{font-size:calc(var(--cp) * .1)}
+.cp .cc big{font-size:calc(var(--cp) * .2);font-weight:900;color:#7CFC9A}
+.pop{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;animation:popin .25s ease-out}
+.pop .tile{--w:calc(var(--cp) * .6);filter:drop-shadow(0 4px 8px rgba(0,0,0,.6))}
+@keyframes popin{from{transform:translate(-50%,-50%) scale(.3);opacity:0}}
+.pl{display:flex;align-items:center;gap:7px;color:#fff;min-width:0}
+.pl-left,.pl-right{flex-direction:column;gap:3px;text-align:center}
+.av{position:relative;display:inline-block;width:54px;height:54px;border-radius:50%;flex:none;box-shadow:0 0 0 3px #fff,0 3px 6px rgba(0,0,0,.45);background:#fff}
+.av svg{width:100%;height:100%;display:block;border-radius:50%}
+.av.sm{width:40px;height:40px;box-shadow:0 0 0 2px #fff,0 1px 3px rgba(0,0,0,.3)}
+.pl.turn .av{animation:glow 1.2s infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 0 4px #ffd54f,0 0 10px 3px rgba(255,213,79,.9)}50%{box-shadow:0 0 0 4px #ffd54f,0 0 22px 9px rgba(255,213,79,.55)}}
+.bubble{position:absolute;top:-16px;left:62%;background:#fff;color:#d32f2f;font-weight:900;font-size:22px;padding:1px 10px;border-radius:14px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.45);z-index:8;animation:bub .25s ease-out}
+.pl-right .bubble{left:auto;right:62%}
+@keyframes bub{from{transform:scale(.3);opacity:0}}
+.pinfo{display:flex;flex-direction:column;line-height:1.2;font-size:15px;min-width:0;align-items:flex-start}
+.pl-left .pinfo,.pl-right .pinfo{align-items:center}
+.pinfo .pn{font-size:16px;max-width:8em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-left .pinfo .pn,.pl-right .pinfo .pn{max-width:68px}
+.pinfo .pw{display:inline-block;background:#fff;color:#14532d;border-radius:6px;padding:0 5px;font-weight:900;font-size:14px}
+.pinfo .pw.dl{background:#ffd54f;color:#5a3b00}
+.ai-tag{font-size:11px;opacity:.85;margin-left:3px}
+.pinfo .ps{font-weight:900}.pinfo .ps.up{color:#b9f6ca}.pinfo .ps.dn{color:#ffcdd2}
+.pinfo .pc{font-size:13px;opacity:.9}
+#mebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:2px 4px}
+#mebar .av{width:44px;height:44px}
+#mebar .pinfo{flex-direction:row;gap:8px;align-items:center}
+#hand{background:rgba(0,0,0,.25)}
+.hello{display:flex;align-items:center;gap:10px}
+.avpick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0 14px}
+.avopt{border:3px solid transparent;background:#f5f5f5;border-radius:14px;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.avopt.on{border-color:#2e7d32;background:#e8f5e9}
+.avopt .av{width:52px;height:52px}
+.item .av.sm{flex:none}
+.seatlist .s .av.sm{width:34px;height:34px}
+@media (orientation:landscape) and (min-width:700px){#board{grid-template-columns:96px minmax(0,1fr) 96px}.mcol .meld,.mcol .flw,.backs.wrap{max-width:94px}}
+/* 手機橫放：牌桌在左，提示和按鈕在右，手牌在下 */
+@media (orientation:landscape) and (max-height:560px){
+  #v-game.on{display:grid;grid-template-columns:minmax(0,1fr) 300px;grid-template-rows:auto auto auto auto minmax(0,1fr) auto;gap:4px 8px}
+  #tableInfo{grid-column:1/-1;grid-row:1}
+  #board{grid-column:1;grid-row:2/6;grid-template-columns:84px minmax(0,1fr) 84px}
+  #center{grid-column:2;grid-row:2;flex-wrap:wrap}
+  #hint{grid-column:2;grid-row:3;font-size:.85em;max-height:40vh;overflow:auto}
+  #mebar{grid-column:2;grid-row:4}
+  #actions{grid-column:2;grid-row:5;align-content:flex-start}
+  #hand{grid-column:1/-1;grid-row:6;padding:4px 2px 2px}
+  #gameVer{display:none}
+  #tableInfo{font-size:14px}#tableInfo button{padding:3px 10px}
+  .oppTop .av{width:42px;height:42px}
+}
+/* 直放：下方區域精簡，牌桌留最大 */
+#center .tile.xl{--w:48px}
+#center{gap:8px;font-size:.95em}
+#hint{font-size:.86em;padding:6px 10px;line-height:1.4}
+#hint .waits .tile{--w:24px}
+#mebar .av{width:36px;height:36px}
+#mebar .pinfo .pn{font-size:16px}
+#mebar .tile.md{--w:26px}
+.act{padding:8px 14px;font-size:1.2em}
+#gameVer{display:none}
+#tableInfo .tv{display:block;font-size:11px;font-weight:400;opacity:.75;text-align:center}
+.pl-top .bubble{top:auto;bottom:-8px;left:58%}
