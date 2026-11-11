@@ -149,7 +149,7 @@ var Table = (function () {
   };
   function discard() {
     var H = T.H, list = handOrder();
-    if (T.sel == null || !list[T.sel]) return;
+    if (T.sel == null || list[T.sel] == null) return;
     var t = list[T.sel]; T.sel = null;
     push({ a: 'dis', s: T.me, t: t });
   }
