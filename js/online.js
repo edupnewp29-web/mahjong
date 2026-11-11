@@ -6,7 +6,8 @@ var Online = { ready: false, uid: null, reason: '', failed: false };
   var V = '10.12.2', base = 'https://www.gstatic.com/firebasejs/' + V + '/', fs, db, authM, auth;
   function refresh() { if (typeof curView !== 'undefined' && (curView === 'home' || curView === 'rank' || curView === 'lobby' || curView === 'settings')) go(curView, true); }
   Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]).then(function (m) {
-    var app = m[0].initializeApp(cfg); authM = m[1]; auth = authM.getAuth(app); fs = m[2]; db = fs.getFirestore(app);
+    var app = m[0].initializeApp(cfg, KP ? 'guest' : undefined); authM = m[1];
+    auth = KP ? authM.initializeAuth(app, { persistence: authM.inMemoryPersistence }) : authM.getAuth(app); fs = m[2]; db = fs.getFirestore(app);
     var started = false;
     authM.onAuthStateChanged(auth, function (u) {
       if (!u) { authM.signInAnonymously(auth).catch(function (e) { Online.reason = '登入失敗：' + e.message; Online.failed = true; refresh(); }); return; }

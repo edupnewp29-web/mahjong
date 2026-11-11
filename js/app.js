@@ -2,8 +2,9 @@
 var APP_VERSION = 'v1.0', APP_DATE = '2026-11-11';
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-function load(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
-function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
+var KP = /[?&]guest=1/.test(location.search) ? 'g_' : ''; /* 測試用：同一台電腦模擬另一支手機 */
+function load(k, d) { try { var v = localStorage.getItem(KP + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+function save(k, v) { try { localStorage.setItem(KP + k, JSON.stringify(v)); } catch (e) { } }
 var toastT;
 function toast(m, ms) { var t = $('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(function () { t.style.display = 'none'; }, ms || 2200); }
 function sheet(html) { $('sheetBox').innerHTML = html; $('sheet').classList.add('on'); }
@@ -125,7 +126,7 @@ function renderSettings() {
   $('sLink').onclick = function () { copyLink(shareURL(''), '🀄 一起來打麻將！點這裡：'); };
   $('sReset').onclick = function () {
     sheet('<h2>確定清除？</h2><p>本機戰績與未打完的牌局會刪除（名字與線上英雄榜不受影響）。</p><div class="row"><button class="btn" onclick="closeSheet()">取消</button><button class="btn primary" id="rsOk">清除</button></div>');
-    $('rsOk').onclick = function () { localStorage.removeItem('mj_save'); localStorage.removeItem('mj_stats'); STATS = { games: 0, hu: 0, zimo: 0, score: 0, best: 0, first: 0 }; closeSheet(); toast('已清除'); renderSettings(); };
+    $('rsOk').onclick = function () { localStorage.removeItem(KP + 'mj_save'); localStorage.removeItem(KP + 'mj_stats'); STATS = { games: 0, hu: 0, zimo: 0, score: 0, best: 0, first: 0 }; closeSheet(); toast('已清除'); renderSettings(); };
   };
 }
 
@@ -230,7 +231,7 @@ window.addEventListener('load', function () {
         else if (window.Online && Online.failed) toast('無法連線，請稍後再開啟連結');
         else if (tries++ < 60) setTimeout(tryJoin, 250); else toast('無法連線，請稍後再開啟連結');
       })();
-      history.replaceState(null, '', location.pathname);
+      history.replaceState(null, '', location.pathname + (KP ? '?guest=1' : ''));
     }
   }
   if (!SET.name) askName(afterName); else afterName();

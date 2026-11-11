@@ -338,7 +338,7 @@ var Table = (function () {
       save(key, true); addStats(st, M.scores[T.me], first);
       if (window.Online && Online.ready) Online.saveMatch({ mode: T.mode, score: M.scores[T.me], hu: st.hu, best: st.best, rank: order.indexOf(T.me) + 1 });
     }
-    if (T.mode === 'local') localStorage.removeItem('mj_save');
+    if (T.mode === 'local') localStorage.removeItem(KP + 'mj_save');
     else if (T.isHost) Online.finishRoom(T.roomId);
     sheet('<h2>🏁 總成績</h2>' + order.map(function (s, i) {
       return '<div class="rank-row' + (s === T.me ? ' me' : '') + '"><span class="n">' + ['🥇', '🥈', '🥉', '4'][i] + '</span><span><b>' + esc(nm(s)) + '</b><br><small style="color:#777">胡 ' + M.stats[s].hu + ' 次（自摸 ' + M.stats[s].zimo + '）・放槍 ' + M.stats[s].pao + '</small></span><span class="' + (M.scores[s] >= 0 ? 'p' : 'n') + '"><b>' + (M.scores[s] >= 0 ? '+' : '') + M.scores[s] + '</b></span></div>';
