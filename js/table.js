@@ -26,7 +26,7 @@ var Table = (function () {
   function begin(o) {
     clearTimers();
     T.mode = o.mode; T.cfg = o.cfg; T.acts = []; T.me = o.me; T.lv = o.lv; T.teach = o.teach; T.open = o.open; T.seats = o.seats;
-    T.roomId = o.roomId || null; T.isHost = !!o.isHost; T.pending = -1; T.lastActAt = Date.now();
+    T.roomId = o.roomId || null; T.isHost = !!o.isHost; T.pending = -1; T.lastActAt = Date.now(); T.away = {};
     T.M = MJ.newMatch(T.cfg); T.H = MJ.startHand(T.M); T.H.__names = T.cfg.names;
     T.evIdx = T.H.events.length; T.claimAt = 0; T.sel = null; T.shownResult = -1; T.mySay = -1; T.quiet = true;
     (o.acts || []).forEach(function (a) { applyAct(a); });
@@ -60,6 +60,7 @@ var Table = (function () {
   function applyAct(a) {
     var H = T.H, idx = T.acts.length;
     T.acts.push(a);
+    if (a.by && T.seats[a.s] && T.seats[a.s].uid === a.by) T.away[a.s] = false; /* 本人回來了 */
     if (a.a === 'next') {
       if (H.phase === 'end' && !T.M.over) { T.H = MJ.startHand(T.M); T.H.__names = T.cfg.names; T.evIdx = 0; T.sel = null; }
     } else if (a.a !== 'say') {
@@ -103,7 +104,7 @@ var Table = (function () {
       var s = H.turn;
       if (s === T.me) { if (T.mode === 'online') later(function () { autoPlay(s); }, Math.max(1000, 90000 - (Date.now() - T.lastActAt))); return; }
       if (isAI(s) && controller()) later(function () { push(MJAI.turn(H, s, T.lv)); }, delay());
-      else if (T.mode === 'online' && controller()) later(function () { autoPlay(s); }, Math.max(1000, 60000 - (Date.now() - T.lastActAt)));
+      else if (T.mode === 'online' && controller()) later(function () { autoPlay(s); }, T.away[s] ? delay() + 1500 : Math.max(1000, 60000 - (Date.now() - T.lastActAt)));
       return;
     }
     if (H.phase === 'claim') {
@@ -120,8 +121,8 @@ var Table = (function () {
       var el = Date.now() - (T.claimStartAt || Date.now());
       if (humans.indexOf(T.me) >= 0 && !says[T.me]) later(function () { T.myClaim(null); }, Math.max(500, 15000 - el));
       if (!controller()) return;
-      humans.forEach(function (s) { if (says[s]) choices[s] = says[s].k ? { k: says[s].k, use: says[s].use } : null; });
-      var waiting = humans.filter(function (s) { return !says[s]; });
+      humans.forEach(function (s) { if (says[s]) choices[s] = says[s].k ? { k: says[s].k, use: says[s].use } : null; else if (T.away[s]) choices[s] = MJAI.claim(H, s, 1); });
+      var waiting = humans.filter(function (s) { return !says[s] && !T.away[s]; });
       if (!waiting.length) later(function () { push(MJ.resolveClaims(H, choices)); }, 300);
       else later(function () { push(MJ.resolveClaims(H, choices)); }, Math.max(500, 19000 - el));
     }
@@ -138,7 +139,7 @@ var Table = (function () {
       return false;
     });
   }
-  function autoPlay(s) { if (T.H.phase === 'discard' && T.H.turn === s) { if (s !== T.me) toast(nm(s) + ' 斷線了，電腦先代打'); push(MJAI.turn(T.H, s, 1)); } }
+  function autoPlay(s) { if (T.H.phase === 'discard' && T.H.turn === s) { if (s !== T.me && !T.away[s]) toast(nm(s) + ' 斷線了，電腦先代打（回來就換回本人）', 3500); if (s !== T.me) T.away[s] = true; push(MJAI.turn(T.H, s, 1)); } }
 
   /* ---------- 我的操作 ---------- */
   T.tapTile = function (i) {

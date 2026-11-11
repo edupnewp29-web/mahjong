@@ -144,7 +144,7 @@ var Room = (function () {
         var unw = R.unwatch; R.unwatch = null; if (unw) unw();
         Table.startOnline({ mode: 'online', roomId: id, isHost: r.host === Online.uid, me: me, lv: r.lv, teach: !!SET.tch, open: false,
           cfg: { seed: r.seed, names: r.seats.map(function (x) { return x.name; }), rounds: r.rounds },
-          seats: r.seats.map(function (x) { return { name: x.name, ai: !!x.ai }; }) });
+          seats: r.seats.map(function (x) { return { name: x.name, ai: !!x.ai, uid: x.uid || null }; }) });
         return;
       }
       var host = r.host === Online.uid, humans = r.seats.filter(Boolean).length;
