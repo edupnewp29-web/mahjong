@@ -190,7 +190,7 @@ var Table = (function () {
     var H = T.H, w = MJ.seatWind(H, s), dealer = s === H.dealer, sc = T.M.scores[s];
     var turn = H.phase === 'discard' && H.turn === s;
     var win = H.phase === 'end' && H.result && H.result.type === 'hu' && H.result.s === s;
-    var bub = T.say && T.say.s === s && Date.now() - T.say.at < 2500 ? '<span class="bubble">' + T.say.w + '！</span>' : '';
+    var bub = '';
     return '<div class="pl pl-' + pos + (turn ? ' turn' : '') + '"><div class="av">' + avatarSVG(T.seats[s].av, win ? 'happy' : '') + bub + '</div>' +
       '<div class="pinfo"><b class="pn">' + esc(nm(s)) + '</b><span><span class="pw' + (dealer ? ' dl' : '') + '">' + MJ.WINDS[w] + (dealer ? '莊' + (H.lian ? H.lian : '') : '') + '</span>' +
       (isAI(s) ? '<span class="ai-tag">電腦</span>' : '') + '</span><span class="ps ' + (sc >= 0 ? 'up' : 'dn') + '">' + (sc > 0 ? '+' : '') + sc + '</span>' +
@@ -221,6 +221,12 @@ var Table = (function () {
     if (T.pop && Date.now() - T.pop.at < 1400 && H.phase !== 'end') h += '<div class="pop">' + tileHTML(T.pop.t) + '</div>';
     return h + '</div>';
   }
+  /* 喊「碰！」「胡！」：大字顯示在牌桌上、靠近說話的那一家 */
+  function sayHTML() {
+    if (!T.say || Date.now() - T.say.at > 2500) return '';
+    var pos = ['b', 'r', 't', 'l'][rel(T.say.s)];
+    return '<div class="saybig sb-' + pos + '"><b>' + esc(nm(T.say.s)) + '</b>' + T.say.w + '！</div>';
+  }
   function fitRivers(top, left, right) {
     var H = T.H, mid = $('mid'); if (!mid) return;
     var W = mid.clientWidth, Hh = mid.clientHeight; if (!W || !Hh) return;
@@ -247,7 +253,7 @@ var Table = (function () {
     $('board').innerHTML =
       '<div class="oppTop">' + playerHTML(top, 'top') + '<div class="otx"><div class="backs">' + backsHTML(top) + '</div><div class="mrow">' + extras(top, 'mini') + '</div></div></div>' +
       '<div class="oppSide L">' + playerHTML(left, 'left') + '<div class="mcol">' + (openHand(left) ? '<div class="backs wrap">' + backsHTML(left) + '</div>' : '') + extras(left, 'mini') + '</div></div>' +
-      '<div id="mid">' + riverHTML(top, 'rt') + riverHTML(left, 'rl') + compassHTML() + riverHTML(right, 'rr') + riverHTML(T.me, 'rb') + '</div>' +
+      '<div id="mid">' + riverHTML(top, 'rt') + riverHTML(left, 'rl') + compassHTML() + riverHTML(right, 'rr') + riverHTML(T.me, 'rb') + sayHTML() + '</div>' +
       '<div class="oppSide R">' + playerHTML(right, 'right') + '<div class="mcol">' + (openHand(right) ? '<div class="backs wrap">' + backsHTML(right) + '</div>' : '') + extras(right, 'mini') + '</div></div>';
     $('mebar').innerHTML = playerHTML(T.me, 'me') + '<div class="mrow">' + extras(T.me, 'md') + '</div>';
     /* 中間訊息 */

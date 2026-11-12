@@ -242,3 +242,21 @@ body.ingame{background:#3b2412}
 #gameVer{display:none}
 #tableInfo .tv{display:block;font-size:11px;font-weight:400;opacity:.75;text-align:center}
 .pl-top .bubble{top:auto;bottom:-8px;left:58%}
+/* v1.3：對手亮的牌放大、喊牌大字、名字不被擋 */
+#board{grid-template-columns:96px minmax(0,1fr) 96px}
+.tile.mini{--w:28px}
+.oppTop .tile.mini{--w:30px}
+.mcol .meld,.mcol .flw,.backs.wrap{max-width:94px}
+.oppSide .flw .tile.mini{--w:26px}
+.oppTop .backs .bk{width:16px;height:23px}
+.pl-left,.pl-right{gap:10px}
+.oppSide{padding-top:8px;overflow:visible}
+.saybig{position:absolute;z-index:20;background:#fff;color:#d32f2f;font-weight:900;font-size:34px;line-height:1.1;padding:6px 16px;border-radius:18px;
+  box-shadow:0 4px 14px rgba(0,0,0,.5);border:3px solid #ffd54f;text-align:center;white-space:nowrap;animation:bub .25s ease-out;pointer-events:none}
+.saybig b{display:block;font-size:16px;color:#555}
+.sb-t{top:2%;left:50%;transform:translateX(-50%)}
+.sb-b{bottom:2%;left:50%;transform:translateX(-50%)}
+.sb-l{left:1%;top:50%;transform:translateY(-50%)}
+.sb-r{right:1%;top:50%;transform:translateY(-50%)}
+@keyframes bub{from{opacity:0;scale:.4}}
+@media (orientation:landscape) and (max-height:560px){#board{grid-template-columns:104px minmax(0,1fr) 104px}}
