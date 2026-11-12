@@ -30,12 +30,14 @@ var Table = (function () {
     T.M = MJ.newMatch(T.cfg); T.H = MJ.startHand(T.M); T.H.__names = T.cfg.names;
     T.evIdx = T.H.events.length; T.claimAt = 0; T.sel = null; T.shownResult = -1; T.mySay = -1; T.quiet = true;
     (o.acts || []).forEach(function (a) { applyAct(a); });
-    T.quiet = false; T.on = true;
+    T.quiet = false; T.on = true; T.diceAt = 0;
     go('game');
+    if (T.mode === 'local' && !(o.acts || []).length) startDice();
     if (T.mode === 'online') {
       var first = true;
       T.unwatch = Online.watchActs(T.roomId, function (list) {
         var added = false;
+        if (first && list.length === 0) startDice();
         T.quiet = first && list.length > 0;
         for (var i = T.acts.length; i < list.length; i++) { applyAct(list[i]); added = true; }
         if (T.quiet) T.shownResult = T.H.phase === 'end' ? -1 : T.shownResult;
@@ -75,11 +77,14 @@ var Table = (function () {
     for (; T.evIdx < ev.length; T.evIdx++) {
       var e = ev[T.evIdx]; if (T.quiet) continue;
       var w = { dis: MJ.name(e.t), pong: '碰', chow: '吃', mk: '槓', ak: '槓', jk: '槓', hu: '胡', zimo: '自摸', flower: '補花' }[e.e];
+      if (e.e === 'start') { startDice(); continue; }
+      if (e.e === 'dis') SFX.clack(1); else if (e.e === 'pong' || e.e === 'chow' || e.e === 'mk' || e.e === 'ak' || e.e === 'jk') SFX.clack(1.3);
       if (w && (e.e !== 'flower' || e.s === T.me)) speak(w);
       if (e.e === 'pong' || e.e === 'chow' || e.e === 'mk' || e.e === 'ak' || e.e === 'jk' || e.e === 'hu' || e.e === 'zimo') T.say = { s: e.s, w: w, at: Date.now() };
       if (e.e === 'dis' && e.s !== T.me) T.pop = { t: e.t, at: Date.now() };
     }
   }
+  function startDice() { T.diceAt = Date.now(); SFX.dice(); SFX.deal(); setTimeout(render, 950); setTimeout(render, 1750); setTimeout(function () { render(); }, 2700); }
   function push(a) {
     if (T.mode === 'local') {
       applyAct(a);
@@ -101,6 +106,7 @@ var Table = (function () {
     var H = T.H;
     if (H.phase === 'end') { if (T.shownResult !== H.no) { T.shownResult = H.no; later(showResult, 700); } return; }
     if (T.mode === 'online' && T.pending === T.acts.length) return;
+    if (T.diceAt && Date.now() - T.diceAt < 2400) { later(tick, 2450 - (Date.now() - T.diceAt)); return; }
     if (H.phase === 'discard') {
       var s = H.turn;
       if (s === T.me) { if (T.mode === 'online') later(function () { autoPlay(s); }, Math.max(1000, 90000 - (Date.now() - T.lastActAt))); return; }
@@ -204,22 +210,53 @@ var Table = (function () {
   function openHand(s) { return T.open && T.mode === 'local' && isAI(s); }
   function riverHTML(s, cls) {
     var H = T.H, rv = H.rivers[s], last = H.last && H.last.s === s && (H.phase === 'claim' || (H.phase === 'discard' && H.turn === (s + 1) % 4));
-    return '<div class="rv ' + cls + '">' + rv.map(function (t, i) { return tileHTML(t, last && i === rv.length - 1 ? 'last' : ''); }).join('') + '</div>';
+    var fresh = last && T.animDone !== H.no + ':' + H.discards; if (fresh) T.animNext = H.no + ':' + H.discards;
+    return '<div class="rv ' + cls + '">' + rv.map(function (t, i) { return tileHTML(t, last && i === rv.length - 1 ? 'last' + (fresh ? ' fresh' : '') : ''); }).join('') + '</div>';
   }
   function backsHTML(s) {
     var H = T.H;
     if (openHand(s)) return MJ.sortTiles(H.hands[s].slice()).map(function (t) { return tileHTML(t, 'mini'); }).join('');
     var n = H.hands[s].length, h = ''; for (var i = 0; i < n; i++) h += '<i class="bk"></i>'; return h;
   }
+  /* 牌牆：羅盤四周 72 墩，摸一張少一張；最後 16 張（留牌）用金邊標示 */
+  function wallSVG() {
+    var H = T.H, n = H.wall.length, B = 14, U = 100 / 18, off = rel(H.dealer) * 18, out = '';
+    for (var j = 0; j < 72; j++) {
+      var cnt = 0, res = false;
+      for (var q = 0; q < 2; q++) { var i = j * 2 + q; if (i >= H.f && i < H.b) { cnt++; if (i >= H.b - MJ.RESERVE) res = true; } }
+      var slot = (j + off) % 72, side = (slot / 18) | 0, pos = slot % 18, x, y, w, h;
+      if (side === 0) { x = B + (17 - pos) * U; y = 100 + B + 1.5; w = U - 0.8; h = B - 3; }
+      else if (side === 1) { x = 100 + B + 1.5; y = B + (17 - pos) * U; w = B - 3; h = U - 0.8; }
+      else if (side === 2) { x = B + pos * U; y = 1.5; w = U - 0.8; h = B - 3; }
+      else { x = 1.5; y = B + pos * U; w = B - 3; h = U - 0.8; }
+      if (!cnt) { out += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="1" fill="rgba(0,0,0,.12)"/>'; continue; }
+      out += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="1.2" fill="' + (cnt === 2 ? '#2f8f5b' : '#5fbf88') + '" stroke="' + (res ? '#ffd54f' : '#f3ead2') + '" stroke-width="' + (res ? 1.1 : 0.8) + '"/>';
+    }
+    return '<svg class="wall" viewBox="0 0 128 128">' + out + '</svg>';
+  }
+  /* 骰子（三顆，跟台灣麻將一樣） */
+  var PIPS = { 1: [[50, 50]], 2: [[30, 30], [70, 70]], 3: [[28, 28], [50, 50], [72, 72]], 4: [[30, 30], [70, 30], [30, 70], [70, 70]], 5: [[28, 28], [72, 28], [50, 50], [28, 72], [72, 72]], 6: [[30, 26], [70, 26], [30, 50], [70, 50], [30, 74], [70, 74]] };
+  function dieSVG(v) {
+    var red = v === 1 || v === 4;
+    return '<svg viewBox="0 0 100 100"><rect x="4" y="4" width="92" height="92" rx="20" fill="#fff" stroke="#bbb" stroke-width="3"/>' +
+      PIPS[v].map(function (p) { return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (v === 1 ? 15 : 9) + '" fill="' + (red ? '#d32f2f' : '#222') + '"/>'; }).join('') + '</svg>';
+  }
+  function diceHTML() {
+    if (!T.diceAt || Date.now() - T.diceAt > 1700) return '';
+    var r = MJ.rng(T.cfg.seed + '#dice' + T.H.no), rolling = Date.now() - T.diceAt < 900, d = [];
+    for (var i = 0; i < 3; i++) d.push(rolling ? 1 + Math.floor(Math.random() * 6) : 1 + Math.floor(r() * 6));
+    return '<div class="dice' + (rolling ? ' roll' : '') + '">' + d.map(function (v) { return '<span class="die">' + dieSVG(v) + '</span>'; }).join('') +
+      (rolling ? '' : '<b>' + (d[0] + d[1] + d[2]) + ' 點</b>') + '</div>';
+  }
   function compassHTML() {
-    var H = T.H, h = '<div class="cp">';
+    var H = T.H, h = '<div class="cpw">' + wallSVG() + '<div class="cp">';
     ['b', 'r', 't', 'l'].forEach(function (p, i) {
       var s = (T.me + i) % 4, on = H.phase !== 'end' && ((H.phase === 'discard' && H.turn === s) || (H.phase === 'claim' && H.claim.from === s));
       h += '<span class="cw ' + p + (on ? ' on' : '') + '">' + MJ.WINDS[MJ.seatWind(H, s)] + '</span>';
     });
     h += '<div class="cc"><small>' + MJ.WINDS[H.wind] + '風 剩</small><big>' + MJ.remaining(H) + '</big></div>';
     if (T.pop && Date.now() - T.pop.at < 1400 && H.phase !== 'end') h += '<div class="pop">' + tileHTML(T.pop.t) + '</div>';
-    return h + '</div>';
+    return h + '</div>' + diceHTML() + '</div>';
   }
   /* 喊「碰！」「胡！」：大字顯示在牌桌上、靠近說話的那一家 */
   function sayHTML() {
@@ -230,17 +267,21 @@ var Table = (function () {
   function fitRivers(top, left, right) {
     var H = T.H, mid = $('mid'); if (!mid) return;
     var W = mid.clientWidth, Hh = mid.clientHeight; if (!W || !Hh) return;
-    var C = Math.max(64, Math.min(124, Math.round(Math.min(W, Hh) * 0.27)));
-    var n = [H.rivers[top].length, H.rivers[left].length, H.rivers[right].length, H.rivers[T.me].length], w;
-    for (w = 46; w > 16; w--) {
+    var n = [H.rivers[top].length, H.rivers[left].length, H.rivers[right].length, H.rivers[T.me].length];
+    var C = Math.max(66, Math.min(116, Math.round(Math.min(W, Hh) * 0.3))), CW = Math.round(C * 1.28), w, rowsL = 6, rowsR = 6;
+    for (w = 46; w > 15; w--) {
       var th = Math.round(w * 4 / 3) + 2, tw = w + 2;
-      var colsTB = Math.max(1, Math.floor((W - 4) / tw)), rT = Math.ceil(n[0] / colsTB), rB = Math.ceil(n[3] / colsTB);
-      var S = (W - C - 12) / 2, colsS = Math.floor(S / tw); if (colsS < 1) continue;
-      var rL = Math.ceil(n[1] / colsS), rR = Math.ceil(n[2] / colsS);
-      if (rT * th + Math.max(C, rL * th, rR * th) + rB * th + 12 <= Hh) break;
+      if (6 * tw > W) continue;
+      var S = (W - CW - 10) / 2, colsS = Math.floor(S / tw); if (colsS < 1) continue;
+      rowsL = Math.ceil(n[1] / colsS); rowsR = Math.ceil(n[2] / colsS);
+      var rT = Math.ceil(n[0] / 6), rB = Math.ceil(n[3] / 6);
+      if (rT * th + Math.max(CW, rowsL * th, rowsR * th) + rB * th + 10 <= Hh) break;
     }
-    mid.style.setProperty('--river', w + 'px'); mid.style.setProperty('--cp', C + 'px');
+    mid.style.setProperty('--river', w + 'px'); mid.style.setProperty('--cp', C + 'px'); mid.style.setProperty('--cpw', CW + 'px');
+    mid.style.setProperty('--rowsL', Math.max(1, rowsL)); mid.style.setProperty('--rowsR', Math.max(1, rowsR));
   }
+  /* 左右兩家立著的牌（從側面看是一條條） */
+  function standHTML(s) { var n = T.H.hands[s].length, h = '<div class="stand">'; for (var i = 0; i < n; i++) h += '<i></i>'; return h + '</div>'; }
   function render() {
     if (!T.on || curView !== 'game') return;
     var H = T.H, M = T.M, myTurn = H.phase === 'discard' && H.turn === T.me;
@@ -252,9 +293,9 @@ var Table = (function () {
     var top = (T.me + 2) % 4, left = (T.me + 3) % 4, right = (T.me + 1) % 4;
     $('board').innerHTML =
       '<div class="oppTop">' + playerHTML(top, 'top') + '<div class="otx"><div class="backs">' + backsHTML(top) + '</div><div class="mrow">' + extras(top, 'mini') + '</div></div></div>' +
-      '<div class="oppSide L">' + playerHTML(left, 'left') + '<div class="mcol">' + (openHand(left) ? '<div class="backs wrap">' + backsHTML(left) + '</div>' : '') + extras(left, 'mini') + '</div></div>' +
+      '<div class="oppSide L"><div class="shead">' + playerHTML(left, 'left') + (openHand(left) ? '' : standHTML(left)) + '</div><div class="mcol">' + (openHand(left) ? '<div class="backs wrap">' + backsHTML(left) + '</div>' : '') + extras(left, 'mini') + '</div></div>' +
       '<div id="mid">' + riverHTML(top, 'rt') + riverHTML(left, 'rl') + compassHTML() + riverHTML(right, 'rr') + riverHTML(T.me, 'rb') + sayHTML() + '</div>' +
-      '<div class="oppSide R">' + playerHTML(right, 'right') + '<div class="mcol">' + (openHand(right) ? '<div class="backs wrap">' + backsHTML(right) + '</div>' : '') + extras(right, 'mini') + '</div></div>';
+      '<div class="oppSide R"><div class="shead">' + (openHand(right) ? '' : standHTML(right)) + playerHTML(right, 'right') + '</div><div class="mcol">' + (openHand(right) ? '<div class="backs wrap">' + backsHTML(right) + '</div>' : '') + extras(right, 'mini') + '</div></div>';
     $('mebar').innerHTML = playerHTML(T.me, 'me') + '<div class="mrow">' + extras(T.me, 'md') + '</div>';
     /* 中間訊息 */
     var c = '';
@@ -311,9 +352,11 @@ var Table = (function () {
     var split = one < 44 && !land ? Math.ceil(n / 2) : 0, drawnLast = myTurn && H.drawn != null;
     box.innerHTML = list.map(function (t, i) {
       var cls = (T.sel === i ? 'sel ' : '') + (T.rec === t && (T.sel == null || list[T.sel] !== t) && list.indexOf(t) === i ? 'rec ' : '') + (drawnLast && i === n - 1 && !split ? 'new' : '');
-      return (split && i === split ? '<span class="gap"></span>' : '') + tileHTML(t, cls, ' data-i="' + i + '"');
+      var dealing = T.diceAt && Date.now() - T.diceAt < 2600;
+      return (split && i === split ? '<span class="gap"></span>' : '') + tileHTML(t, cls + (dealing ? ' deal' : ''), ' data-i="' + i + '"' + (dealing ? ' style="animation-delay:' + (900 + i * 60) + 'ms"' : ''));
     }).join('');
     fitRivers(top, left, right);
+    if (T.animNext) { T.animDone = T.animNext; T.animNext = null; }
     $('gameVer').textContent = verText() + (T.mode === 'online' ? '・連線牌桌' : '');
     /* 事件 */
     box.querySelectorAll('.tile').forEach(function (el) { el.onclick = function () { T.tapTile(+el.dataset.i); }; });

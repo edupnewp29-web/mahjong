@@ -1,5 +1,5 @@
 /* ===== 外殼：畫面切換、名字、設定、英雄榜、線上名單 ===== */
-var APP_VERSION = 'v1.3', APP_DATE = '2026-11-12';
+var APP_VERSION = 'v1.4', APP_DATE = '2026-11-12';
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 var KP = /[?&]guest=1/.test(location.search) ? 'g_' : ''; /* 測試用：同一台電腦模擬另一支手機 */
@@ -13,7 +13,7 @@ $('sheet').addEventListener('click', function (e) { if (e.target.id === 'sheet' 
 function verText() { return '好友麻將 ' + APP_VERSION + '（' + APP_DATE + ' 更新）'; }
 
 /* ----- 設定與名字（存在這支手機） ----- */
-var SET = Object.assign({ name: '', av: Math.floor(Math.random() * 8), fs: 20, speech: true, num: true, speed: 1, lv: 1, rd: 1, tch: 1, open: false }, load('mj_set', {}));
+var SET = Object.assign({ name: '', av: Math.floor(Math.random() * 8), fs: 20, sfx: true, speech: true, num: true, speed: 1, lv: 1, rd: 1, tch: 1, open: false }, load('mj_set', {}));
 function saveSet() { save('mj_set', SET); applyFont(); if (window.Online && Online.ready) Online.syncProfile(); }
 function applyFont() { document.documentElement.style.setProperty('--fs', SET.fs + 'px'); }
 applyFont();
@@ -32,6 +32,34 @@ function speak(text) {
   if (!SET.speech || !window.speechSynthesis) return;
   try { var u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW'; if (zhVoice) u.voice = zhVoice; u.rate = 0.95; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) { }
 }
+
+/* ----- 音效：出牌「啪」、擲骰子、洗牌（用 Web Audio 合成，不用下載檔案） ----- */
+var SFX = (function () {
+  var ac = null;
+  function ctx() {
+    if (!SET.sfx) return null;
+    try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) { return null; }
+    return ac;
+  }
+  ['touchstart', 'click'].forEach(function (ev) { document.addEventListener(ev, function () { if (SET.sfx) ctx(); }, { passive: true }); });
+  function clack(vol, when) {
+    var c = ctx(); if (!c) return; var t = c.currentTime + (when || 0), len = 0.09;
+    var buf = c.createBuffer(1, Math.floor(c.sampleRate * len), c.sampleRate), d = buf.getChannelData(0);
+    for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 7);
+    var src = c.createBufferSource(); src.buffer = buf;
+    var bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2300 + Math.random() * 500; bp.Q.value = 1.1;
+    var g = c.createGain(); g.gain.value = 0.9 * (vol || 1);
+    src.connect(bp); bp.connect(g); g.connect(c.destination); src.start(t);
+    var o = c.createOscillator(), og = c.createGain(); o.frequency.setValueAtTime(190, t); o.frequency.exponentialRampToValueAtTime(70, t + 0.06);
+    og.gain.setValueAtTime(0.35 * (vol || 1), t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+    o.connect(og); og.connect(c.destination); o.start(t); o.stop(t + 0.08);
+  }
+  return {
+    clack: function (v) { clack(v || 1); },
+    dice: function () { for (var i = 0; i < 7; i++) clack(0.35 + Math.random() * 0.25, i * 0.09 + Math.random() * 0.05); },
+    deal: function () { for (var i = 0; i < 8; i++) clack(0.25, 0.9 + i * 0.1); }
+  };
+})();
 
 /* ----- 畫面切換 ----- */
 var TITLES = { home: '好友麻將', setup: '跟電腦打', game: '牌桌', lobby: '找朋友打', room: '房間', lessons: '麻將教室', lesson: '課程', rank: '英雄榜', online: '線上玩家', settings: '設定' };
@@ -116,6 +144,7 @@ function renderSettings() {
     '<button class="item" id="sName"><span class="av sm">' + avatarSVG(SET.av) + '</span><span class="t"><b>我的名字和頭像</b><small>' + (esc(SET.name) || '未設定') + '</small></span><span class="badge">修改</span></button>' +
     '<div class="panel"><h3>字體大小</h3><div class="chips" id="fsChips">' + [[18, '大'], [20, '較大'], [23, '特大']].map(function (x) { return '<button class="chip' + (SET.fs === x[0] ? ' on' : '') + '" data-fs="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
     '<h3>電腦出牌速度</h3><div class="chips" id="spChips">' + [[2, '慢'], [1, '中'], [0, '快']].map(function (x) { return '<button class="chip' + (SET.speed === x[0] ? ' on' : '') + '" data-sp="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div></div>' +
+    sw('sfx', '🀄 打牌音效', '出牌「啪」一聲、擲骰子、發牌') +
     sw('speech', '🔊 語音報牌', '打牌時唸出「五萬」「碰」「胡」') +
     sw('num', '🔢 筒、條牌角加數字', '一眼看出是幾筒、幾條') +
     '<button class="item" id="sLink"><span class="t"><b>📤 分享遊戲給朋友</b><small>複製網址貼到 LINE（會用外部瀏覽器開）</small></span><span class="badge">複製</span></button>' +
@@ -124,7 +153,7 @@ function renderSettings() {
   $('sName').onclick = function () { askName(renderSettings, true); };
   $('fsChips').querySelectorAll('.chip').forEach(function (b) { b.onclick = function () { SET.fs = +b.dataset.fs; saveSet(); renderSettings(); }; });
   $('spChips').querySelectorAll('.chip').forEach(function (b) { b.onclick = function () { SET.speed = +b.dataset.sp; saveSet(); renderSettings(); }; });
-  $('settingsBox').querySelectorAll('[data-sw]').forEach(function (b) { b.onclick = function () { var k = b.dataset.sw; SET[k] = !SET[k]; saveSet(); renderSettings(); if (k === 'speech' && SET.speech) speak('五萬'); }; });
+  $('settingsBox').querySelectorAll('[data-sw]').forEach(function (b) { b.onclick = function () { var k = b.dataset.sw; SET[k] = !SET[k]; saveSet(); renderSettings(); if (k === 'speech' && SET.speech) speak('五萬'); if (k === 'sfx' && SET.sfx) SFX.clack(); }; });
   $('sLink').onclick = function () { copyLink(shareURL(''), '🀄 一起來打麻將！點這裡：'); };
   $('sReset').onclick = function () {
     sheet('<h2>確定清除？</h2><p>本機戰績與未打完的牌局會刪除（名字與線上英雄榜不受影響）。</p><div class="row"><button class="btn" onclick="closeSheet()">取消</button><button class="btn primary" id="rsOk">清除</button></div>');

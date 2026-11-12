@@ -260,3 +260,59 @@ body.ingame{background:#3b2412}
 .sb-r{right:1%;top:50%;transform:translateY(-50%)}
 @keyframes bub{from{opacity:0;scale:.4}}
 @media (orientation:landscape) and (max-height:560px){#board{grid-template-columns:104px minmax(0,1fr) 104px}}
+/* v1.4：牌牆、立著的牌、整齊牌河、骰子、發牌 */
+.cpw{grid-area:cp;position:relative;width:var(--cpw);height:var(--cpw);display:flex;align-items:center;justify-content:center}
+.cpw .wall{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
+.cpw .cp{grid-area:auto}
+.rv{display:grid;gap:2px;justify-content:center}
+.rt,.rb{grid-template-columns:repeat(6,var(--river))}
+.rt{transform:rotate(180deg);align-self:end}
+.rt .tile{transform:rotate(180deg)}
+.rb{align-self:start}
+.rl,.rr{grid-auto-flow:column;grid-auto-columns:var(--river);align-content:center}
+.rl{grid-template-rows:repeat(var(--rowsL),auto);direction:rtl;justify-content:end}
+.rr{grid-template-rows:repeat(var(--rowsR),auto);justify-content:start}
+.rv .tile.last{transform:none;scale:1.18}
+.rt .tile.last{transform:rotate(180deg)}
+.rv .tile.fresh{animation:drop .35s ease-out}
+@keyframes drop{from{opacity:0;translate:0 -12px;scale:1.5}}
+.oppSide{flex-direction:row;align-items:flex-start;gap:4px}
+.sinfo{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;flex:1}
+.stand{display:flex;flex-direction:column;gap:1px;padding-top:6px;flex:none}
+.stand i{display:block;width:13px;height:7px;border-radius:2px;background:linear-gradient(90deg,#f3ead2 0 30%,#3fa36b 30%,#2a7d4f);box-shadow:0 1px 0 rgba(0,0,0,.35)}
+.oppSide.L .stand i{background:linear-gradient(270deg,#f3ead2 0 30%,#3fa36b 30%,#2a7d4f)}
+#board{grid-template-columns:110px minmax(0,1fr) 110px}
+@media (orientation:landscape) and (max-height:560px){#board{grid-template-columns:116px minmax(0,1fr) 116px}}
+.dice{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:4px;z-index:9;background:rgba(0,0,0,.35);border-radius:12px;flex-wrap:wrap;align-content:center}
+.dice .die{width:calc(var(--cp) * .3);height:calc(var(--cp) * .3);display:inline-block}
+.dice .die svg{width:100%;height:100%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+.dice.roll .die{animation:roll .3s linear infinite}
+.dice .die:nth-child(2){animation-delay:-.1s}.dice .die:nth-child(3){animation-delay:-.2s}
+.dice b{width:100%;text-align:center;color:#ffd54f;font-size:calc(var(--cp) * .17);text-shadow:0 1px 2px #000}
+@keyframes roll{0%{rotate:0deg;translate:0 0}25%{translate:3px -5px}50%{rotate:180deg;translate:-3px 2px}75%{translate:2px -3px}100%{rotate:360deg;translate:0 0}}
+#hand .tile.deal{animation:dealin .3s ease-out backwards}
+@keyframes dealin{from{opacity:0;translate:0 -40px;scale:.6}}
+#board{grid-template-columns:94px minmax(0,1fr) 94px;padding:5px;gap:3px}
+.oppSide{flex-direction:column;align-items:stretch;gap:6px}
+.shead{display:flex;gap:3px;justify-content:center;align-items:flex-start}
+.pl-left .av,.pl-right .av{width:48px;height:48px}
+.pl-left .pinfo .pn,.pl-right .pinfo .pn{max-width:70px;font-size:15px}
+.stand{padding-top:2px}
+.stand i{width:11px;height:7px}
+.mcol .meld,.mcol .flw,.backs.wrap{max-width:92px}
+@media (orientation:landscape) and (max-height:560px){#board{grid-template-columns:104px minmax(0,1fr) 104px}}
+@media (orientation:landscape) and (max-height:560px){
+  #board{grid-template-columns:152px minmax(0,1fr) 152px}
+  .oppSide{gap:4px}
+  .shead{flex-wrap:wrap;justify-content:flex-start}
+  .oppSide.R .shead{justify-content:flex-end}
+  .pl-left,.pl-right{flex-direction:row;text-align:left;gap:6px}
+  .pl-left .pinfo,.pl-right .pinfo{align-items:flex-start}
+  .pl-left .av,.pl-right .av,.oppTop .av{width:42px;height:42px}
+  .pinfo{font-size:13px}.pinfo .pn{font-size:15px}.pinfo .pc{font-size:12px}
+  .stand{flex-direction:row;order:9;width:100%;padding:0;justify-content:center}
+  .stand i{width:7px;height:12px;background:linear-gradient(#f3ead2 0 25%,#3fa36b 25%,#2a7d4f)!important}
+  .mcol{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:3px}
+  .oppSide .tile.mini,.oppSide .flw .tile.mini{--w:22px}
+  .mcol .meld,.mcol .flw{max-width:none}
+}
