@@ -316,3 +316,110 @@ body.ingame{background:#3b2412}
   .oppSide .tile.mini,.oppSide .flw .tile.mini{--w:22px}
   .mcol .meld,.mcol .flw{max-width:none}
 }
+
+/* ===== v2.0 斜角立體牌桌 ===== */
+#v-game{position:relative;padding:calc(env(safe-area-inset-top) + 4px) max(6px,env(safe-area-inset-right)) 4px max(6px,env(safe-area-inset-left));background:radial-gradient(ellipse at 50% 0%,#4d3826 0%,#22150b 75%)}
+#stage{flex:1 1 auto;min-height:0;position:relative;display:grid;grid-template-columns:92px minmax(0,1fr) 92px;grid-template-rows:auto minmax(0,1fr);gap:4px}
+.seat2{color:#fff;min-width:0;display:flex;flex-direction:column;gap:5px;align-items:center;z-index:3}
+.seat2 .sh{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;min-width:0}
+.seat2 .sh .pinfo{align-items:center}
+.seat2 .av{width:60px;height:60px}
+.seat2.turn .av{animation:glow 1.2s infinite}
+.seat2 .pn{max-width:88px}
+.seat2 .pc{font-weight:400;color:#fff;opacity:.85;font-size:13px}
+.seat2 .sm{display:flex;flex-wrap:wrap;gap:3px;justify-content:center}
+.seat2 .sm .tile.mini{--w:28px}
+.st{grid-column:1/4;grid-row:1;flex-direction:row;align-items:center;justify-content:center;gap:10px}
+.st .sh{flex-direction:row;text-align:left;gap:8px}.st .sh .pinfo{align-items:flex-start}
+.st .pn{max-width:9em}
+.sl{grid-column:1;grid-row:2}.sr{grid-column:3;grid-row:2}
+.pwrap{grid-column:2;grid-row:2;position:relative;perspective:900px;perspective-origin:50% 100%;min-height:0;min-width:0}
+.plane{position:absolute;left:0;right:0;bottom:0;height:100%;transform-origin:50% 100%;transform:rotateX(20deg);display:flex;flex-direction:column;gap:2px;padding:3px;border-radius:12px;
+  background:radial-gradient(ellipse at 50% 60%,#33a56b,#1d7449 60%,#114d2e);border:5px solid #8a5a2b;box-shadow:inset 0 0 22px rgba(0,0,0,.45),0 0 0 2px #5a3814,0 12px 20px rgba(0,0,0,.6)}
+.prow{flex:1 1 auto;min-height:0;display:flex;gap:2px}
+.plane #mid{flex:1 1 auto;--cols:6}
+.rt,.rb{grid-template-columns:repeat(var(--cols),var(--river))}
+.ph{display:flex;gap:1px;justify-content:center;flex:none}
+.ph i{display:block;flex:none}
+.ph-t{min-height:20px}
+.ph-t i{width:15px;height:20px;border-radius:3px;background:linear-gradient(#f3ead2 0 24%,#49b47c 24%,#2a7d4f);box-shadow:0 3px 2px rgba(0,0,0,.45)}
+.ph-l,.ph-r{flex-direction:column;justify-content:center;display:none;width:18px}
+.ph-l i,.ph-r i{width:18px;height:9px;border-radius:2px;box-shadow:0 2px 1px rgba(0,0,0,.45)}
+.ph-l i{background:linear-gradient(90deg,#2a7d4f,#49b47c 68%,#f3ead2 68%)}
+.ph-r i{background:linear-gradient(270deg,#2a7d4f,#49b47c 68%,#f3ead2 68%)}
+.wl{display:flex;gap:1px;justify-content:center;flex:none}
+.wl-l,.wl-r{flex-direction:column}
+.wb{display:block;border-radius:2px;background:#2f8f5b;box-shadow:0 1px 1px rgba(0,0,0,.45);border:0 solid #f3ead2;flex:1 1 0}
+.wl-t .wb,.wl-b .wb{max-width:22px;height:11px;border-bottom-width:4px}
+.wl-l .wb,.wl-r .wb{max-height:16px;width:9px;border-right-width:4px}
+.wb.w1{background:#63c38c}.wl-t .wb.w1,.wl-b .wb.w1{border-bottom-width:2px;height:8px;align-self:flex-end}.wl-l .wb.w1,.wl-r .wb.w1{border-right-width:2px}
+.wb.w0{visibility:hidden}.wb.res{border-color:#ffd54f}
+.plane .cp{box-shadow:0 4px 10px rgba(0,0,0,.5),inset 0 0 0 2px #6b7178;border-radius:50%}
+.plane .cp .cc{inset:26%}
+.popbig{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:15;animation:popin .25s ease-out;pointer-events:none}
+.popbig .tile{--w:66px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.65))}
+.dicebig{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:16;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;background:rgba(0,0,0,.55);padding:12px 14px;border-radius:16px;width:190px}
+.dicebig .die{width:46px;height:46px;display:inline-block}.dicebig .die svg{width:100%;height:100%}
+.dicebig.roll .die{animation:roll .3s linear infinite}
+.dicebig b{width:100%;text-align:center;color:#ffd54f;font-size:22px}
+#stage .saybig{z-index:20}
+#stage .sb-t{top:16%}#stage .sb-b{bottom:6%}#stage .sb-l{left:16%}#stage .sb-r{right:16%}
+#infobar{position:relative;flex:none;display:flex;flex-direction:column;gap:4px}
+.ibrow{display:flex;align-items:center;gap:8px;min-width:0}
+#mebar{flex:none;padding:0;flex-wrap:nowrap}
+#infobar #hint{flex:1;min-width:0}
+#ctl{display:flex;flex-direction:column;gap:4px;align-items:center}
+#ctl:has(#center:empty):has(#actions:empty){display:none}
+#handrow{flex:none;display:flex;flex-wrap:wrap;gap:4px;align-items:flex-end;background:rgba(0,0,0,.3);border-radius:12px;padding:12px 3px 4px}
+#handrow #hand{flex:1 1 100%;min-width:0;background:none;padding:0;gap:3px 2px}
+#mymelds{display:flex;flex-wrap:wrap;gap:4px;order:-1;width:100%;justify-content:center}
+#mymelds:empty{display:none}
+#mymelds .tile.md{--w:30px}
+#hand .tile{--w:min(66px,calc((100% - 16px) / var(--n,17) - 2px))}
+@media (orientation:landscape) and (max-height:560px){
+  #v-game.on{display:flex;gap:3px}
+  #stage{grid-template-columns:128px minmax(0,1fr) 128px}
+  .st{grid-column:2;grid-row:1}.sl{grid-column:1;grid-row:1/3}.sr{grid-column:3;grid-row:1/3}
+  .seat2 .av{width:50px;height:50px}
+  .sl .sh,.sr .sh{flex-direction:row;text-align:left;gap:6px;align-self:stretch}
+  .sr .sh{flex-direction:row-reverse;text-align:right}
+  .sl .sh .pinfo{align-items:flex-start}.sr .sh .pinfo{align-items:flex-end}
+  .seat2 .pn{max-width:70px}
+  .seat2 .sm .tile.mini{--w:25px}
+  .st .sm{flex-wrap:nowrap}
+  .st .av{width:42px;height:42px}
+  .ph-l,.ph-r{display:flex}
+  .plane{transform:rotateX(26deg);border-width:7px;padding:4px}
+  #infobar{flex-direction:row}
+  .ibrow{flex:1}
+  #infobar #hint{font-size:15px;max-height:3em;overflow:hidden;padding:3px 10px}
+  #mebar .av{width:32px;height:32px}
+  #ctl{position:absolute;right:0;bottom:calc(100% + 4px);flex-direction:row;align-items:flex-end;z-index:18;gap:8px}
+  #center{background:rgba(0,0,0,.6);border-radius:12px;padding:4px 10px}
+  #handrow{flex-wrap:nowrap;padding:12px 4px 3px}
+  #handrow #hand{flex:1 1 auto;flex-wrap:nowrap}
+  #mymelds{order:1;width:auto;flex:none;flex-wrap:nowrap}
+  #tableInfo .tv{display:inline;margin-left:8px}
+}
+/* 直放：三家並排在上方，牌桌佔滿整個寬度 */
+#stage{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 4px}
+.st{grid-column:2;grid-row:1;flex-direction:column;justify-content:flex-start}
+.sl{grid-column:1;grid-row:1}.sr{grid-column:3;grid-row:1}
+.seat2 .sh,.st .sh{flex-direction:row;text-align:left;gap:6px;align-self:stretch;justify-content:center}
+.seat2 .sh .pinfo,.st .sh .pinfo{align-items:flex-start}
+.seat2 .av{width:50px;height:50px}
+.seat2 .pn,.st .pn{max-width:74px}
+.st .sm{justify-content:center}
+.pwrap{grid-column:1/4;grid-row:2}
+.ph-l,.ph-r{display:flex}
+.plane{border-width:7px;padding:4px}
+@media (orientation:landscape) and (max-height:560px){
+  #stage{grid-template-columns:128px minmax(0,1fr) 128px;gap:4px}
+  .st{grid-column:2;grid-row:1;flex-direction:row;justify-content:center}
+  .sl{grid-column:1;grid-row:1/3}.sr{grid-column:3;grid-row:1/3}
+  .pwrap{grid-column:1/4;grid-row:2;margin:0 92px}
+  .sr .sh{flex-direction:row-reverse;text-align:right}.sr .sh .pinfo{align-items:flex-end}
+  .st .av{width:42px;height:42px}
+  .st .sm{flex-wrap:nowrap}
+}
+@media (orientation:landscape) and (max-height:560px){#infobar #hint{max-height:none;overflow:visible;line-height:1.3}#hint .warn{margin-top:0}}

@@ -16,7 +16,7 @@
 <title>好友麻將</title>
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=1.4">
+<link rel="stylesheet" href="css/style.css?v=2.0">
 </head>
 <body>
 <header class="top" id="topbar">
@@ -69,12 +69,9 @@
   <!-- 牌桌（所有模式共用） -->
   <section id="v-game" class="view">
     <div id="tableInfo"></div>
-    <div id="board"></div>
-    <div id="center"></div>
-    <div id="hint"></div>
-    <div id="mebar"></div>
-    <div id="actions"></div>
-    <div id="hand"></div>
+    <div id="stage"></div>
+    <div id="infobar"><div class="ibrow"><div id="mebar"></div><div id="hint"></div></div><div id="ctl"><div id="center"></div><div id="actions"></div></div></div>
+    <div id="handrow"><div id="hand"></div><div id="mymelds"></div></div>
     <p class="ver" id="gameVer"></p>
   </section>
 
@@ -90,14 +87,14 @@
 <div id="sheet" class="sheet"><div class="sheet-box" id="sheetBox"></div></div>
 <div id="toast"></div>
 
-<script src="js/firebase-config.js?v=1.4"></script>
-<script src="js/core.js?v=1.4"></script>
-<script src="js/ai.js?v=1.4"></script>
-<script src="js/avatars.js?v=1.4"></script>
-<script src="js/tiles.js?v=1.4"></script>
-<script src="js/app.js?v=1.4"></script>
-<script src="js/table.js?v=1.4"></script>
-<script src="js/lessons.js?v=1.4"></script>
-<script src="js/online.js?v=1.4"></script>
+<script src="js/firebase-config.js?v=2.0"></script>
+<script src="js/core.js?v=2.0"></script>
+<script src="js/ai.js?v=2.0"></script>
+<script src="js/avatars.js?v=2.0"></script>
+<script src="js/tiles.js?v=2.0"></script>
+<script src="js/app.js?v=2.0"></script>
+<script src="js/table.js?v=2.0"></script>
+<script src="js/lessons.js?v=2.0"></script>
+<script src="js/online.js?v=2.0"></script>
 </body>
 </html>

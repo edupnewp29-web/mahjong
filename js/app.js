@@ -1,5 +1,5 @@
 /* ===== 外殼：畫面切換、名字、設定、英雄榜、線上名單 ===== */
-var APP_VERSION = 'v1.4', APP_DATE = '2026-11-12';
+var APP_VERSION = 'v2.0', APP_DATE = '2026-11-13';
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 var KP = /[?&]guest=1/.test(location.search) ? 'g_' : ''; /* 測試用：同一台電腦模擬另一支手機 */
